@@ -36,7 +36,7 @@ import { Loader2 } from "lucide-react";
 import { givePoints } from "@/lib/actions";
 import type { Artwork } from "@/lib/types";
 
-const judges = ["Juri A", "Juri B", "Juri C"];
+const judges = ["Iqbal", "Jason", "Kyora"];
 
 const pointsSchema = z.object({
   judgeName: z.string().refine(val => judges.includes(val), { message: "Pilih juri yang valid." }),
