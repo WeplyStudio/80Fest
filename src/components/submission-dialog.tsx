@@ -127,7 +127,7 @@ export function SubmissionDialog({ children }: { children: ReactNode }) {
                     <FormItem>
                     <FormLabel>Kelas</FormLabel>
                     <FormControl>
-                        <Input placeholder="XII IPA 1" {...field} />
+                        <Input placeholder="VII" {...field} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
