@@ -1,3 +1,4 @@
+
 "use server";
 
 import { z } from "zod";
@@ -18,13 +19,16 @@ const submissionSchema = z.object({
 
 export async function getArtworks(): Promise<Artwork[]> {
     const collection = await getArtworksCollection();
-    const artworks = await collection.find({}).sort({ createdAt: -1 }).toArray();
+    const artworksFromDb = await collection.find({}).sort({ createdAt: -1 }).toArray();
     
-    // Convert ObjectId to string for client-side usage
-    return artworks.map(art => ({
-        ...art,
-        id: art._id.toString(),
-    })) as unknown as Artwork[];
+    // Convert ObjectId to string for client-side usage and remove the original _id
+    return artworksFromDb.map(art => {
+        const { _id, ...rest } = art;
+        return {
+            ...rest,
+            id: _id.toString(),
+        } as Artwork;
+    });
 }
 
 export async function submitArtwork(formData: FormData) {
