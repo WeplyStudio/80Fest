@@ -3,7 +3,7 @@
 
 import { useState, useMemo } from "react";
 import Image from "next/image";
-import type { Artwork } from "@/lib/types";
+import type { Artwork, JudgeScore } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -30,7 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Eye, MoreHorizontal, Trash, Award, GalleryVertical, GalleryVerticalEnd, Pencil } from "lucide-react";
+import { Eye, MoreHorizontal, Trash, Award, GalleryVertical, GalleryVerticalEnd, Pencil, Star } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -43,22 +43,25 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { deleteArtwork, removeWinnerStatus, setWinnerStatus, toggleGalleryStatus, setSubmissionStatus } from "@/lib/actions";
+import { deleteArtwork, toggleGalleryStatus, setSubmissionStatus, getLeaderboardStatus, setLeaderboardStatus } from "@/lib/actions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { EditArtworkDialog } from "./edit-artwork-dialog";
+import { GivePointsDialog } from "./give-points-dialog";
 
 
 interface AdminPanelProps {
     initialArtworks: Artwork[];
     initialSubmissionStatus: boolean;
+    initialLeaderboardStatus: boolean;
 }
 
-export function AdminPanel({ initialArtworks, initialSubmissionStatus }: AdminPanelProps) {
+export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLeaderboardStatus }: AdminPanelProps) {
   const [artworks, setArtworks] = useState<Artwork[]>(initialArtworks);
   const [submissionOpen, setSubmissionOpen] = useState(initialSubmissionStatus);
+  const [leaderboardVisible, setLeaderboardVisible] = useState(initialLeaderboardStatus);
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
 
@@ -67,38 +70,13 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus }: AdminPa
         artwork.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         artwork.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         artwork.class.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    ).sort((a,b) => b.totalPoints - a.totalPoints);
   }, [artworks, searchTerm]);
   
-  // This function is passed to the Edit dialog to update the state here
   const handleUpdateArtworkState = (updatedArtwork: Artwork) => {
     setArtworks(currentArtworks => 
         currentArtworks.map(art => art.id === updatedArtwork.id ? updatedArtwork : art)
     );
-  }
-
-  const handleSetWinner = async (artworkId: string, rank: number) => {
-    const result = await setWinnerStatus(artworkId, rank);
-    if (result.success) {
-      setArtworks(prev => prev.map(art => {
-          if (art.status_juara === rank) return { ...art, status_juara: 0 };
-          if (art.id === artworkId) return { ...art, status_juara: rank, isInGallery: true };
-          return art;
-      }));
-      toast({ title: "Status Juara Diperbarui", description: `Karya telah ditetapkan sebagai Juara ${rank}.` });
-    } else {
-      toast({ variant: 'destructive', title: "Gagal", description: result.message });
-    }
-  };
-
-  const handleRemoveWinner = async (artworkId: string) => {
-    const result = await removeWinnerStatus(artworkId);
-    if(result.success) {
-      setArtworks(prev => prev.map(art => art.id === artworkId ? { ...art, status_juara: 0 } : art));
-      toast({ title: "Status Juara Dihapus", description: `Karya tidak lagi menjadi juara.` });
-    } else {
-       toast({ variant: 'destructive', title: "Gagal", description: result.message });
-    }
   }
 
   const handleToggleGallery = async (artworkId: string, currentStatus: boolean) => {
@@ -141,14 +119,17 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus }: AdminPa
     }
   }
 
-  const getWinnerBadge = (status: number) => {
-    if (status === 0) return null;
-    const colors: { [key: number]: string } = {
-        1: "bg-yellow-400 text-yellow-900",
-        2: "bg-gray-400 text-gray-900",
-        3: "bg-amber-600 text-amber-50",
+  const handleLeaderboardToggle = async (checked: boolean) => {
+    const result = await setLeaderboardStatus(checked);
+    if (result.success) {
+        setLeaderboardVisible(result.newState);
+        toast({
+            title: `Leaderboard ${result.newState ? "Ditampilkan" : "Disembunyikan"}`,
+            description: `Hasil akhir sekarang ${result.newState ? "bisa" : "tidak bisa"} dilihat publik.`,
+        });
+    } else {
+        toast({ variant: 'destructive', title: "Gagal", description: result.message });
     }
-    return <Badge className={colors[status]}>Juara {status}</Badge>
   }
 
   const getGalleryBadge = (inGallery: boolean) => {
@@ -168,20 +149,33 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus }: AdminPa
       <Card>
         <CardHeader>
             <CardTitle className="font-headline">Pengaturan Lomba</CardTitle>
-            <CardDescription>Atur status pendaftaran karya untuk peserta.</CardDescription>
+            <CardDescription>Atur status pendaftaran dan visibilitas leaderboard.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="grid sm:grid-cols-2 gap-4">
             <div className="flex items-center space-x-4 rounded-md border p-4">
                 <div className="flex-1 space-y-1">
                     <p className="text-sm font-medium leading-none">Buka Pendaftaran Karya</p>
                     <p className="text-sm text-muted-foreground">
-                        Jika aktif, peserta dapat mengunggah karya mereka melalui halaman utama.
+                        Jika aktif, peserta dapat mengunggah karya mereka.
                     </p>
                 </div>
                  <Switch
                     checked={submissionOpen}
                     onCheckedChange={handleSubmissionToggle}
                     id="submission-status"
+                />
+            </div>
+             <div className="flex items-center space-x-4 rounded-md border p-4">
+                <div className="flex-1 space-y-1">
+                    <p className="text-sm font-medium leading-none">Tampilkan Leaderboard</p>
+                    <p className="text-sm text-muted-foreground">
+                        Jika aktif, hasil akhir akan tampil di halaman leaderboard.
+                    </p>
+                </div>
+                 <Switch
+                    checked={leaderboardVisible}
+                    onCheckedChange={handleLeaderboardToggle}
+                    id="leaderboard-status"
                 />
             </div>
         </CardContent>
@@ -201,7 +195,7 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus }: AdminPa
               <TableRow>
                 <TableHead>Judul Karya</TableHead>
                 <TableHead>Nama Peserta</TableHead>
-                <TableHead>Kelas</TableHead>
+                <TableHead>Total Poin</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Aksi</TableHead>
               </TableRow>
@@ -210,10 +204,14 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus }: AdminPa
               {filteredArtworks.map((artwork) => (
                 <TableRow key={artwork.id}>
                   <TableCell className="font-medium">{artwork.title}</TableCell>
-                  <TableCell>{artwork.name}</TableCell>
-                  <TableCell>{artwork.class}</TableCell>
+                  <TableCell>{artwork.name} ({artwork.class})</TableCell>
+                   <TableCell className="font-semibold">
+                    <div className="flex items-center gap-1">
+                        <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                        {artwork.totalPoints}
+                    </div>
+                  </TableCell>
                   <TableCell className="flex flex-wrap gap-1">
-                      {getWinnerBadge(artwork.status_juara)}
                       {getGalleryBadge(artwork.isInGallery)}
                   </TableCell>
                   <TableCell className="text-right">
@@ -240,24 +238,16 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus }: AdminPa
                                     Edit Data
                                 </DropdownMenuItem>
                             </EditArtworkDialog>
+                             <GivePointsDialog artwork={artwork} onArtworkUpdate={handleUpdateArtworkState}>
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                    <Star className="mr-2 h-4 w-4" />
+                                    Beri Poin
+                                </DropdownMenuItem>
+                            </GivePointsDialog>
                             <DropdownMenuItem onClick={() => handleToggleGallery(artwork.id, artwork.isInGallery)}>
                               {artwork.isInGallery ? <GalleryVerticalEnd className="mr-2 h-4 w-4" /> : <GalleryVertical className="mr-2 h-4 w-4" />}
                               {artwork.isInGallery ? 'Hapus dari Galeri' : 'Tambahkan ke Galeri'}
                             </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => handleSetWinner(artwork.id, 1)}>
-                              <Award className="mr-2 h-4 w-4 text-yellow-500" />
-                              Jadikan Juara 1
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleSetWinner(artwork.id, 2)}>
-                              <Award className="mr-2 h-4 w-4 text-gray-500" />
-                              Jadikan Juara 2
-                            </DropdownMenuItem>
-                             <DropdownMenuItem onClick={() => handleSetWinner(artwork.id, 3)}>
-                              <Award className="mr-2 h-4 w-4 text-amber-600" />
-                              Jadikan Juara 3
-                            </DropdownMenuItem>
-                            {artwork.status_juara > 0 && <DropdownMenuItem onClick={() => handleRemoveWinner(artwork.id)}>Hapus Status Juara</DropdownMenuItem>}
                             <DropdownMenuSeparator />
                             <AlertDialogTrigger asChild>
                               <DropdownMenuItem className="text-destructive focus:text-destructive">
@@ -269,7 +259,7 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus }: AdminPa
                         </DropdownMenu>
 
                         {/* Dialog for View Details */}
-                        <DialogContent className="max-w-4xl w-full">
+                        <DialogContent className="max-w-4xl w-full max-h-[90vh] overflow-y-auto">
                           <DialogHeader>
                             <DialogTitle className="font-headline text-2xl">{artwork.title}</DialogTitle>
                             <DialogDescription>
@@ -288,7 +278,9 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus }: AdminPa
                               </div>
                               <div>
                                   <h3 className="font-semibold font-headline mb-2">Deskripsi Karya</h3>
-                                  <p className="text-muted-foreground">{artwork.description}</p>
+                                  <p className="text-muted-foreground mb-4">{artwork.description}</p>
+                                  <h3 className="font-semibold font-headline mb-2">Rincian Poin</h3>
+                                  <ScoreTable scores={artwork.scores || []} totalPoints={artwork.totalPoints || 0} />
                               </div>
                           </div>
                         </DialogContent>
@@ -324,4 +316,35 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus }: AdminPa
       </div>
     </div>
   );
+}
+
+
+function ScoreTable({ scores, totalPoints }: { scores: JudgeScore[], totalPoints: number }) {
+    return (
+        <div className="border rounded-lg">
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Juri</TableHead>
+                        <TableHead className="text-right">Poin</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {scores.map(score => (
+                        <TableRow key={score.judgeName}>
+                            <TableCell>{score.judgeName}</TableCell>
+                            <TableCell className="text-right">{score.score}</TableCell>
+                        </TableRow>
+                    ))}
+                     <TableRow>
+                        <TableCell colSpan={2} className="p-0"><div className="h-px bg-border w-full"></div></TableCell>
+                    </TableRow>
+                    <TableRow className="bg-muted/50 font-bold">
+                        <TableCell>Total</TableCell>
+                        <TableCell className="text-right">{totalPoints}</TableCell>
+                    </TableRow>
+                </TableBody>
+            </Table>
+        </div>
+    )
 }

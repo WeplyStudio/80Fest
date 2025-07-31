@@ -5,7 +5,7 @@ import { z } from "zod";
 import { getArtworksCollection, getSettingsCollection } from "./mongodb";
 import { revalidatePath } from "next/cache";
 import { ObjectId } from "mongodb";
-import type { Artwork } from "./types";
+import type { Artwork, JudgeScore } from "./types";
 
 const submissionSchema = z.object({
   name: z.string().min(1),
@@ -33,6 +33,8 @@ export async function getArtworks(): Promise<Artwork[]> {
         return {
             ...rest,
             id: _id.toString(),
+            scores: art.scores || [], // Ensure scores is an array
+            totalPoints: art.totalPoints || 0, // Ensure totalPoints exists
         } as Artwork;
     });
 }
@@ -71,6 +73,8 @@ export async function submitArtwork(formData: FormData) {
       ...parsed.data,
       imageUrl: imageUrl,
       imageHint: "poster design",
+      scores: [],
+      totalPoints: 0,
       status_juara: 0,
       isInGallery: false, // Default to not being in the gallery
       createdAt: new Date(),
@@ -180,6 +184,43 @@ export async function deleteArtwork(artworkId: string) {
     }
 }
 
+export async function givePoints(artworkId: string, judgeName: string, score: number) {
+    try {
+        const artworks = await getArtworksCollection();
+        const artwork = await artworks.findOne({ _id: new ObjectId(artworkId) });
+
+        if (!artwork) {
+            return { success: false, message: "Karya tidak ditemukan." };
+        }
+
+        const existingScores: JudgeScore[] = artwork.scores || [];
+        
+        // Check if the judge has already scored this artwork
+        if (existingScores.some(s => s.judgeName === judgeName)) {
+            return { success: false, message: `${judgeName} sudah memberikan nilai untuk karya ini.` };
+        }
+
+        // Add the new score
+        const newScores = [...existingScores, { judgeName, score }];
+        const totalPoints = newScores.reduce((acc, curr) => acc + curr.score, 0);
+
+        await artworks.updateOne(
+            { _id: new ObjectId(artworkId) },
+            { $set: { scores: newScores, totalPoints: totalPoints } }
+        );
+
+        revalidatePath('/admin');
+        revalidatePath('/leaderboard');
+
+        return { success: true };
+
+    } catch (error) {
+        console.error("Gagal memberikan poin:", error);
+        return { success: false, message: "Terjadi kesalahan pada server." };
+    }
+}
+
+
 // --- Submission Status Actions ---
 
 export async function getSubmissionStatus(): Promise<boolean> {
@@ -209,5 +250,37 @@ export async function setSubmissionStatus(isOpen: boolean) {
     } catch (error) {
         console.error("Gagal mengubah status pendaftaran:", error);
         return { success: false, message: "Gagal mengubah status pendaftaran." };
+    }
+}
+
+
+// --- Leaderboard Status Actions ---
+
+export async function getLeaderboardStatus(): Promise<boolean> {
+    try {
+        const settings = await getSettingsCollection();
+        const config = await settings.findOne({ key: "leaderboard" });
+        // If not set, default to not showing (false)
+        return config ? config.showResults : false;
+    } catch (error) {
+        console.error("Gagal mengambil status leaderboard:", error);
+        return false;
+    }
+}
+
+export async function setLeaderboardStatus(showResults: boolean) {
+    try {
+        const settings = await getSettingsCollection();
+        await settings.updateOne(
+            { key: "leaderboard" },
+            { $set: { showResults } },
+            { upsert: true }
+        );
+        revalidatePath('/leaderboard');
+        revalidatePath('/admin');
+        return { success: true, newState: showResults };
+    } catch (error) {
+        console.error("Gagal mengubah status leaderboard:", error);
+        return { success: false, message: "Gagal mengubah status leaderboard." };
     }
 }

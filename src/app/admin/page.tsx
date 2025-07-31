@@ -12,7 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Lock } from "lucide-react";
-import { getArtworks, getSubmissionStatus } from "@/lib/actions";
+import { getArtworks, getSubmissionStatus, getLeaderboardStatus } from "@/lib/actions";
 import { Artwork } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -30,6 +30,7 @@ export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [artworks, setArtworks] = useState<Artwork[] | null>(null);
   const [submissionStatus, setSubmissionStatus] = useState<boolean | null>(null);
+  const [leaderboardStatus, setLeaderboardStatus] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -53,10 +54,12 @@ export default function AdminPage() {
       setLoading(true);
       Promise.all([
         getArtworks(),
-        getSubmissionStatus()
-      ]).then(([artworksData, submissionStatusData]) => {
+        getSubmissionStatus(),
+        getLeaderboardStatus()
+      ]).then(([artworksData, submissionStatusData, leaderboardStatusData]) => {
             setArtworks(artworksData);
             setSubmissionStatus(submissionStatusData);
+            setLeaderboardStatus(leaderboardStatusData);
             setLoading(false);
       }).catch(err => {
             console.error(err);
@@ -84,7 +87,7 @@ export default function AdminPage() {
   }
 
   if (isAuthenticated) {
-     if (loading || !artworks || submissionStatus === null) {
+     if (loading || !artworks || submissionStatus === null || leaderboardStatus === null) {
       return (
         <div className="space-y-4">
           <div>
@@ -100,7 +103,11 @@ export default function AdminPage() {
         </div>
       );
     }
-    return <AdminPanel initialArtworks={artworks} initialSubmissionStatus={submissionStatus} />;
+    return <AdminPanel 
+        initialArtworks={artworks} 
+        initialSubmissionStatus={submissionStatus} 
+        initialLeaderboardStatus={leaderboardStatus} 
+    />;
   }
 
   return (
