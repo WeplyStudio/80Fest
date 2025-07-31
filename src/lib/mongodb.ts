@@ -3,7 +3,7 @@ import type { Artwork } from './types';
 
 // The MONGODB_URI is hardcoded here to bypass environment variable loading issues.
 // In a production environment, it's highly recommended to use environment variables.
-const uri = "mongodb+srv://hahahalucukokrek:Z5ImxXzsGeS4QkJF@cluster0.u4gea61.mongodb.net/VisiKreasi";
+const uri = "mongodb+srv://hahahalucukokrek:Z5ImxXzsGeS4QkJF@cluster0.u4gea61.mongodb.net/Osis";
 
 if (!uri) {
   throw new Error('MongoDB URI is not defined.');
