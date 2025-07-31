@@ -2,13 +2,13 @@ import { ContestInfo } from "@/components/contest-info";
 import { Gallery } from "@/components/gallery";
 import { SubmissionDialog } from "@/components/submission-dialog";
 import { Button } from "@/components/ui/button";
-import { getArtworks } from "@/lib/actions";
-import { Upload } from "lucide-react";
+import { getArtworks, getSubmissionStatus } from "@/lib/actions";
+import { Upload, XCircle } from "lucide-react";
 
 export default async function Home() {
   const allArtworks = await getArtworks();
-  // Hanya tampilkan karya yang ditandai untuk ada di galeri
   const galleryArtworks = allArtworks.filter(artwork => artwork.isInGallery);
+  const isSubmissionOpen = await getSubmissionStatus();
 
   return (
     <div className="space-y-12">
@@ -21,12 +21,19 @@ export default async function Home() {
           Jadilah bagian dari perayaan kreativitas dan inovasi.
         </p>
         <div className="mt-8">
-          <SubmissionDialog>
-            <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg shadow-accent/20">
-              <Upload className="mr-2" />
-              Upload Karya Sekarang
-            </Button>
-          </SubmissionDialog>
+          {isSubmissionOpen ? (
+            <SubmissionDialog>
+              <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg shadow-accent/20">
+                <Upload className="mr-2" />
+                Upload Karya Sekarang
+              </Button>
+            </SubmissionDialog>
+          ) : (
+             <Button size="lg" disabled>
+                <XCircle className="mr-2" />
+                Pendaftaran Telah Ditutup
+              </Button>
+          )}
         </div>
       </section>
 

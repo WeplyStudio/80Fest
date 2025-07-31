@@ -2,7 +2,7 @@
 "use server";
 
 import { z } from "zod";
-import { getArtworksCollection } from "./mongodb";
+import { getArtworksCollection, getSettingsCollection } from "./mongodb";
 import { revalidatePath } from "next/cache";
 import { ObjectId } from "mongodb";
 import type { Artwork } from "./types";
@@ -36,6 +36,11 @@ export async function getArtworks(): Promise<Artwork[]> {
 }
 
 export async function submitArtwork(formData: FormData) {
+  const isSubmissionOpen = await getSubmissionStatus();
+  if (!isSubmissionOpen) {
+    return { success: false, message: 'Pendaftaran sudah ditutup.' };
+  }
+  
   const rawFormData = Object.fromEntries(formData.entries());
   
   const file = formData.get('artworkFile') as File | null;
@@ -144,5 +149,37 @@ export async function deleteArtwork(artworkId: string) {
     } catch (error) {
         console.error("Gagal menghapus karya:", error);
         return { success: false, message: 'Gagal menghapus karya.' };
+    }
+}
+
+// --- Submission Status Actions ---
+
+export async function getSubmissionStatus(): Promise<boolean> {
+    try {
+        const settings = await getSettingsCollection();
+        const config = await settings.findOne({ key: "submission" });
+        // If not set, default to open (true)
+        return config ? config.isOpen : true;
+    } catch (error) {
+        console.error("Gagal mengambil status pendaftaran:", error);
+        // Default to true in case of error to be safe
+        return true;
+    }
+}
+
+export async function setSubmissionStatus(isOpen: boolean) {
+    try {
+        const settings = await getSettingsCollection();
+        await settings.updateOne(
+            { key: "submission" },
+            { $set: { isOpen: isOpen } },
+            { upsert: true }
+        );
+        revalidatePath('/');
+        revalidatePath('/admin');
+        return { success: true, newState: isOpen };
+    } catch (error) {
+        console.error("Gagal mengubah status pendaftaran:", error);
+        return { success: false, message: "Gagal mengubah status pendaftaran." };
     }
 }

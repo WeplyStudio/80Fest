@@ -39,3 +39,8 @@ export async function getArtworksCollection(): Promise<Collection<Document>> {
     const db = await getDb();
     return db.collection('artworks');
 }
+
+export async function getSettingsCollection(): Promise<Collection<Document>> {
+    const db = await getDb();
+    return db.collection('settings');
+}

@@ -12,7 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Lock } from "lucide-react";
-import { getArtworks } from "@/lib/actions";
+import { getArtworks, getSubmissionStatus } from "@/lib/actions";
 import { Artwork } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -29,6 +29,7 @@ const AUTH_COOKIE_NAME = "admin-authenticated";
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [artworks, setArtworks] = useState<Artwork[] | null>(null);
+  const [submissionStatus, setSubmissionStatus] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -50,16 +51,18 @@ export default function AdminPage() {
   useEffect(() => {
     if (isAuthenticated) {
       setLoading(true);
-      getArtworks()
-        .then(data => {
-            setArtworks(data);
+      Promise.all([
+        getArtworks(),
+        getSubmissionStatus()
+      ]).then(([artworksData, submissionStatusData]) => {
+            setArtworks(artworksData);
+            setSubmissionStatus(submissionStatusData);
             setLoading(false);
-        })
-        .catch(err => {
+      }).catch(err => {
             console.error(err);
             toast({ variant: 'destructive', title: 'Gagal memuat data' });
             setLoading(false);
-        });
+      });
     }
   }, [isAuthenticated, toast]);
 
@@ -81,7 +84,7 @@ export default function AdminPage() {
   }
 
   if (isAuthenticated) {
-     if (loading || !artworks) {
+     if (loading || !artworks || submissionStatus === null) {
       return (
         <div className="space-y-4">
           <div>
@@ -89,6 +92,7 @@ export default function AdminPage() {
             <Skeleton className="h-4 w-96 mt-2" />
           </div>
           <div className="border rounded-lg p-4 space-y-2">
+            <Skeleton className="h-10 w-full" />
             {[...Array(5)].map((_, i) => (
               <Skeleton key={i} className="h-12 w-full" />
             ))}
@@ -96,7 +100,7 @@ export default function AdminPage() {
         </div>
       );
     }
-    return <AdminPanel initialArtworks={artworks} />;
+    return <AdminPanel initialArtworks={artworks} initialSubmissionStatus={submissionStatus} />;
   }
 
   return (

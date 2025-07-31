@@ -30,7 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Eye, MoreHorizontal, Trash, Award, GalleryVertical, GalleryVerticalEnd } from "lucide-react";
+import { Eye, MoreHorizontal, Trash, Award, GalleryVertical, GalleryVerticalEnd, UploadCloud, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -43,10 +43,19 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { deleteArtwork, removeWinnerStatus, setWinnerStatus, toggleGalleryStatus } from "@/lib/actions";
+import { deleteArtwork, removeWinnerStatus, setWinnerStatus, toggleGalleryStatus, setSubmissionStatus } from "@/lib/actions";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Switch } from "./ui/switch";
+import { Label } from "./ui/label";
 
-export function AdminPanel({ initialArtworks }: { initialArtworks: Artwork[] }) {
+interface AdminPanelProps {
+    initialArtworks: Artwork[];
+    initialSubmissionStatus: boolean;
+}
+
+export function AdminPanel({ initialArtworks, initialSubmissionStatus }: AdminPanelProps) {
   const [artworks, setArtworks] = useState<Artwork[]>(initialArtworks);
+  const [submissionOpen, setSubmissionOpen] = useState(initialSubmissionStatus);
   const { toast } = useToast();
 
   const handleSetWinner = async (artworkId: string, rank: number) => {
@@ -91,6 +100,19 @@ export function AdminPanel({ initialArtworks }: { initialArtworks: Artwork[] }) 
         toast({ variant: 'destructive', title: "Gagal", description: result.message });
     }
   };
+  
+  const handleSubmissionToggle = async (checked: boolean) => {
+    const result = await setSubmissionStatus(checked);
+    if (result.success) {
+        setSubmissionOpen(result.newState);
+        toast({
+            title: `Pendaftaran Karya ${result.newState ? "Dibuka" : "Ditutup"}`,
+            description: `Peserta sekarang ${result.newState ? "bisa" : "tidak bisa"} mengunggah karya.`,
+        });
+    } else {
+        toast({ variant: 'destructive', title: "Gagal", description: result.message });
+    }
+  }
 
   const getWinnerBadge = (status: number) => {
     if (status === 0) return null;
@@ -108,127 +130,153 @@ export function AdminPanel({ initialArtworks }: { initialArtworks: Artwork[] }) 
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold font-headline">Dasbor Admin</h1>
         <p className="text-muted-foreground">
-          Kelola semua karya yang telah di-upload oleh peserta.
+          Kelola semua karya yang telah di-upload oleh peserta dan atur pendaftaran.
         </p>
       </div>
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Judul Karya</TableHead>
-              <TableHead>Nama Peserta</TableHead>
-              <TableHead>Kelas</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Aksi</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {initialArtworks.map((artwork) => (
-              <TableRow key={artwork.id}>
-                <TableCell className="font-medium">{artwork.title}</TableCell>
-                <TableCell>{artwork.name}</TableCell>
-                <TableCell>{artwork.class}</TableCell>
-                <TableCell className="space-x-1">
-                    {getWinnerBadge(artwork.status_juara)}
-                    {getGalleryBadge(artwork.isInGallery)}
-                </TableCell>
-                <TableCell className="text-right">
-                  <Dialog>
-                    <AlertDialog>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Buka menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                          <DialogTrigger asChild>
-                            <DropdownMenuItem>
-                              <Eye className="mr-2 h-4 w-4" />
-                              Lihat Detail
-                            </DropdownMenuItem>
-                          </DialogTrigger>
-                          <DropdownMenuItem onClick={() => handleToggleGallery(artwork.id, artwork.isInGallery)}>
-                            {artwork.isInGallery ? <GalleryVerticalEnd className="mr-2 h-4 w-4" /> : <GalleryVertical className="mr-2 h-4 w-4" />}
-                            {artwork.isInGallery ? 'Hapus dari Galeri' : 'Tambahkan ke Galeri'}
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => handleSetWinner(artwork.id, 1)}>
-                            <Award className="mr-2 h-4 w-4 text-yellow-500" />
-                            Jadikan Juara 1
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleSetWinner(artwork.id, 2)}>
-                            <Award className="mr-2 h-4 w-4 text-gray-500" />
-                            Jadikan Juara 2
-                          </DropdownMenuItem>
-                           <DropdownMenuItem onClick={() => handleSetWinner(artwork.id, 3)}>
-                            <Award className="mr-2 h-4 w-4 text-amber-600" />
-                            Jadikan Juara 3
-                          </DropdownMenuItem>
-                          {artwork.status_juara > 0 && <DropdownMenuItem onClick={() => handleRemoveWinner(artwork.id)}>Hapus Status Juara</DropdownMenuItem>}
-                          <DropdownMenuSeparator />
-                          <AlertDialogTrigger asChild>
-                            <DropdownMenuItem className="text-destructive focus:text-destructive">
-                              <Trash className="mr-2 h-4 w-4" />
-                              Hapus Karya
-                            </DropdownMenuItem>
-                          </AlertDialogTrigger>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
 
-                      {/* Dialog for View Details */}
-                      <DialogContent className="max-w-4xl w-full">
-                        <DialogHeader>
-                          <DialogTitle className="font-headline text-2xl">{artwork.title}</DialogTitle>
-                          <DialogDescription>
-                            {artwork.name} - {artwork.class}
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="grid md:grid-cols-2 gap-6 items-start">
-                            <div className="aspect-[2480/3508] w-full relative rounded-md overflow-hidden bg-muted">
-                                <Image
-                                    src={artwork.imageUrl}
-                                    alt={artwork.title}
-                                    fill
-                                    className="object-contain"
-                                    data-ai-hint={artwork.imageHint}
-                                />
-                            </div>
-                            <div>
-                                <h3 className="font-semibold font-headline mb-2">Deskripsi Karya</h3>
-                                <p className="text-muted-foreground">{artwork.description}</p>
-                            </div>
-                        </div>
-                      </DialogContent>
-                      
-                      {/* Alert Dialog for Delete */}
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Anda yakin?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                Tindakan ini tidak dapat diurungkan. Ini akan menghapus karya "{artwork.title}" secara permanen dari data.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>Batal</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete(artwork.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                Ya, Hapus
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </Dialog>
-                </TableCell>
+      <Card>
+        <CardHeader>
+            <CardTitle className="font-headline">Pengaturan Lomba</CardTitle>
+            <CardDescription>Atur status pendaftaran karya untuk peserta.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <div className="flex items-center space-x-4 rounded-md border p-4">
+                <div className="flex-1 space-y-1">
+                    <p className="text-sm font-medium leading-none">Buka Pendaftaran Karya</p>
+                    <p className="text-sm text-muted-foreground">
+                        Jika aktif, peserta dapat mengunggah karya mereka melalui halaman utama.
+                    </p>
+                </div>
+                 <Switch
+                    checked={submissionOpen}
+                    onCheckedChange={handleSubmissionToggle}
+                    id="submission-status"
+                />
+            </div>
+        </CardContent>
+      </Card>
+      
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold font-headline">Daftar Karya Peserta</h2>
+        <div className="border rounded-lg">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Judul Karya</TableHead>
+                <TableHead>Nama Peserta</TableHead>
+                <TableHead>Kelas</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Aksi</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {initialArtworks.map((artwork) => (
+                <TableRow key={artwork.id}>
+                  <TableCell className="font-medium">{artwork.title}</TableCell>
+                  <TableCell>{artwork.name}</TableCell>
+                  <TableCell>{artwork.class}</TableCell>
+                  <TableCell className="space-x-1">
+                      {getWinnerBadge(artwork.status_juara)}
+                      {getGalleryBadge(artwork.isInGallery)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Dialog>
+                      <AlertDialog>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <span className="sr-only">Buka menu</span>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+                            <DialogTrigger asChild>
+                              <DropdownMenuItem>
+                                <Eye className="mr-2 h-4 w-4" />
+                                Lihat Detail
+                              </DropdownMenuItem>
+                            </DialogTrigger>
+                            <DropdownMenuItem onClick={() => handleToggleGallery(artwork.id, artwork.isInGallery)}>
+                              {artwork.isInGallery ? <GalleryVerticalEnd className="mr-2 h-4 w-4" /> : <GalleryVertical className="mr-2 h-4 w-4" />}
+                              {artwork.isInGallery ? 'Hapus dari Galeri' : 'Tambahkan ke Galeri'}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleSetWinner(artwork.id, 1)}>
+                              <Award className="mr-2 h-4 w-4 text-yellow-500" />
+                              Jadikan Juara 1
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleSetWinner(artwork.id, 2)}>
+                              <Award className="mr-2 h-4 w-4 text-gray-500" />
+                              Jadikan Juara 2
+                            </DropdownMenuItem>
+                             <DropdownMenuItem onClick={() => handleSetWinner(artwork.id, 3)}>
+                              <Award className="mr-2 h-4 w-4 text-amber-600" />
+                              Jadikan Juara 3
+                            </DropdownMenuItem>
+                            {artwork.status_juara > 0 && <DropdownMenuItem onClick={() => handleRemoveWinner(artwork.id)}>Hapus Status Juara</DropdownMenuItem>}
+                            <DropdownMenuSeparator />
+                            <AlertDialogTrigger asChild>
+                              <DropdownMenuItem className="text-destructive focus:text-destructive">
+                                <Trash className="mr-2 h-4 w-4" />
+                                Hapus Karya
+                              </DropdownMenuItem>
+                            </AlertDialogTrigger>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        {/* Dialog for View Details */}
+                        <DialogContent className="max-w-4xl w-full">
+                          <DialogHeader>
+                            <DialogTitle className="font-headline text-2xl">{artwork.title}</DialogTitle>
+                            <DialogDescription>
+                              {artwork.name} - {artwork.class}
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="grid md:grid-cols-2 gap-6 items-start">
+                              <div className="aspect-[2480/3508] w-full relative rounded-md overflow-hidden bg-muted">
+                                  <Image
+                                      src={artwork.imageUrl}
+                                      alt={artwork.title}
+                                      fill
+                                      className="object-contain"
+                                      data-ai-hint={artwork.imageHint}
+                                  />
+                              </div>
+                              <div>
+                                  <h3 className="font-semibold font-headline mb-2">Deskripsi Karya</h3>
+                                  <p className="text-muted-foreground">{artwork.description}</p>
+                              </div>
+                          </div>
+                        </DialogContent>
+                        
+                        {/* Alert Dialog for Delete */}
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                              <AlertDialogTitle>Anda yakin?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                  Tindakan ini tidak dapat diurungkan. Ini akan menghapus karya "{artwork.title}" secara permanen dari data.
+                              </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                              <AlertDialogCancel>Batal</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDelete(artwork.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                  Ya, Hapus
+                              </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </Dialog>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </div>
   );
