@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, type ReactNode } from "react";
@@ -57,19 +58,22 @@ export function SubmissionDialog({ children }: { children: ReactNode }) {
       class: "",
       title: "",
       description: "",
+      artworkFile: undefined,
     },
   });
 
   async function onSubmit(data: SubmissionFormValues) {
     setIsSubmitting(true);
     const formData = new FormData();
-    Object.entries(data).forEach(([key, value]) => {
-        if (key === 'artworkFile') {
-            formData.append(key, value[0]);
-        } else {
-            formData.append(key, value);
-        }
-    });
+    
+    // Append all form fields to FormData, including the file
+    formData.append('name', data.name);
+    formData.append('class', data.class);
+    formData.append('title', data.title);
+    formData.append('description', data.description);
+    if (data.artworkFile && data.artworkFile.length > 0) {
+      formData.append('artworkFile', data.artworkFile[0]);
+    }
 
     const result = await submitArtwork(formData);
 

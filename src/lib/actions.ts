@@ -12,10 +12,14 @@ const submissionSchema = z.object({
   class: z.string().min(1),
   title: z.string().min(1),
   description: z.string().min(1),
-  // We'll just validate that a file is present on the client side for now.
-  // In a real app, this would handle the file upload to a storage service.
   artworkFile: z.any(),
 });
+
+// Helper function to convert a file to a Data URI
+async function fileToDataUri(file: File): Promise<string> {
+  const buffer = Buffer.from(await file.arrayBuffer());
+  return `data:${file.type};base64,${buffer.toString("base64")}`;
+}
 
 export async function getArtworks(): Promise<Artwork[]> {
     const collection = await getArtworksCollection();
@@ -33,6 +37,20 @@ export async function getArtworks(): Promise<Artwork[]> {
 
 export async function submitArtwork(formData: FormData) {
   const rawFormData = Object.fromEntries(formData.entries());
+  
+  // The 'artworkFile' from FormData will be a File object
+  const file = formData.get('artworkFile') as File | null;
+
+  // Basic validation for the file
+  if (!file || file.size === 0) {
+      return { success: false, message: 'File poster tidak valid atau kosong.' };
+  }
+  if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      return { success: false, message: 'Ukuran file maksimal 5MB.' };
+  }
+  if (!['image/png', 'image/jpeg'].includes(file.type)) {
+      return { success: false, message: 'Format file harus PNG atau JPG.' };
+  }
 
   const parsed = submissionSchema.safeParse(rawFormData);
   if (!parsed.success) {
@@ -41,12 +59,12 @@ export async function submitArtwork(formData: FormData) {
 
   try {
     const artworks = await getArtworksCollection();
+    const imageUrl = await fileToDataUri(file);
+
     await artworks.insertOne({
       ...parsed.data,
-      // In a real app, you would upload the file to a cloud storage
-      // and save the URL here. For now, we use a placeholder.
-      imageUrl: "https://placehold.co/600x800.png",
-      imageHint: "poster design",
+      imageUrl: imageUrl,
+      imageHint: "poster design", // This can be improved with AI later
       status_juara: 0,
       createdAt: new Date(),
     });
