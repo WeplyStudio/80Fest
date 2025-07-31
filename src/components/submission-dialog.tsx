@@ -37,7 +37,7 @@ const submissionSchema = z.object({
   artworkFile: z
     .custom<FileList>()
     .refine((files) => files?.length === 1, "File poster harus diupload.")
-    .refine((files) => files?.[0]?.size <= 50 * 1024 * 1024, `Ukuran file maksimal 50MB.`)
+    .refine((files) => files?.[0]?.size <= 25 * 1024 * 1024, `Ukuran file maksimal 25MB.`)
     .refine(
       (files) => ["image/png", "image/jpeg"].includes(files?.[0]?.type),
       "Format file harus PNG atau JPG."
@@ -169,7 +169,7 @@ export function SubmissionDialog({ children }: { children: ReactNode }) {
               name="artworkFile"
               render={({ field: { onChange, value, ...rest } }) => (
                 <FormItem>
-                  <FormLabel>File Poster (PNG/JPG, maks 50MB)</FormLabel>
+                  <FormLabel>File Poster (PNG/JPG, maks 25MB)</FormLabel>
                   <FormControl>
                     <Input
                       type="file"

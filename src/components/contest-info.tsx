@@ -4,17 +4,17 @@ import { Calendar, Palette, ScrollText } from "lucide-react";
 const infoItems = [
   {
     icon: Palette,
-    title: "Tema Lomba",
-    content: "Kreativitas Tanpa Batas: Inovasi untuk Masa Depan. Tunjukkan bagaimana idemu dapat membentuk hari esok yang lebih baik melalui poster infografis yang inspiratif.",
+    title: "Tema Poster",
+    content: "Dirgahayu republik indonesia ke 80: Bersatu Berdaulat Rakyat Sejahtera Indonesia Maju",
   },
   {
     icon: Calendar,
     title: "Jadwal Penting",
     content: (
         <ul className="list-disc pl-5 space-y-1">
-            <li><strong>Pendaftaran & Pengumpulan:</strong> 1 - 15 Oktober 2025</li>
-            <li><strong>Periode Penjurian:</strong> 16 - 20 Oktober 2025</li>
-            <li><strong>Pengumuman Pemenang:</strong> 22 Oktober 2025</li>
+            <li><strong>Pengumpulan:</strong> 6 - 8 Agustus 2025</li>
+            <li><strong>Periode Penjurian:</strong> 8 Agustus 2025</li>
+            <li><strong>Pengumuman Pemenang:</strong> 9 Agustus 2025</li>
         </ul>
     ),
   },
@@ -23,9 +23,9 @@ const infoItems = [
     title: "Ketentuan Umum",
     content: (
         <ul className="list-disc pl-5 space-y-1">
-            <li>Karya harus orisinal dan belum pernah dipublikasikan.</li>
-            <li>Peserta adalah siswa aktif sekolah ini.</li>
-            <li>Format file yang diterima adalah PNG atau JPG, maks. 50MB.</li>
+            <li>Karya harus 100% original milik peserta dan belum pernah di publikasikan di perlombaan apapun!</li>
+            <li>Juri berhak mendiskualifikasi peserta apabila ketahuan mengambil atau menyalin atau menduplikasikan karya orang lain.</li>
+            <li>Format file yang diterima adalah PNG atau JPG, maks. 25MB.</li>
             <li>Keputusan juri bersifat mutlak dan tidak dapat diganggu gugat.</li>
         </ul>
     ),

@@ -43,8 +43,8 @@ export async function submitArtwork(formData: FormData) {
   if (!file || file.size === 0) {
       return { success: false, message: 'File poster tidak valid atau kosong.' };
   }
-  if (file.size > 50 * 1024 * 1024) {
-      return { success: false, message: 'Ukuran file maksimal 50MB.' };
+  if (file.size > 25 * 1024 * 1024) {
+      return { success: false, message: 'Ukuran file maksimal 25MB.' };
   }
   if (!['image/png', 'image/jpeg'].includes(file.type)) {
       return { success: false, message: 'Format file harus PNG atau JPG.' };
