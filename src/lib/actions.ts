@@ -12,7 +12,7 @@ const submissionSchema = z.object({
   class: z.string().min(1),
   title: z.string().min(1),
   description: z.string().min(1),
-  artworkFile: z.any(),
+  // artworkFile is not part of the base schema as it's handled separately
 });
 
 // Helper function to convert a file to a Data URI
@@ -38,20 +38,19 @@ export async function getArtworks(): Promise<Artwork[]> {
 export async function submitArtwork(formData: FormData) {
   const rawFormData = Object.fromEntries(formData.entries());
   
-  // The 'artworkFile' from FormData will be a File object
   const file = formData.get('artworkFile') as File | null;
 
-  // Basic validation for the file
   if (!file || file.size === 0) {
       return { success: false, message: 'File poster tidak valid atau kosong.' };
   }
-  if (file.size > 5 * 1024 * 1024) { // 5MB limit
+  if (file.size > 5 * 1024 * 1024) {
       return { success: false, message: 'Ukuran file maksimal 5MB.' };
   }
   if (!['image/png', 'image/jpeg'].includes(file.type)) {
       return { success: false, message: 'Format file harus PNG atau JPG.' };
   }
 
+  // We only parse the text fields, file is handled separately
   const parsed = submissionSchema.safeParse(rawFormData);
   if (!parsed.success) {
       return { success: false, message: 'Data tidak valid.' };
@@ -62,9 +61,9 @@ export async function submitArtwork(formData: FormData) {
     const imageUrl = await fileToDataUri(file);
 
     await artworks.insertOne({
-      ...parsed.data,
-      imageUrl: imageUrl,
-      imageHint: "poster design", // This can be improved with AI later
+      ...parsed.data, // This contains name, class, title, description
+      imageUrl: imageUrl, // Explicitly set the new image URL
+      imageHint: "poster design",
       status_juara: 0,
       createdAt: new Date(),
     });
