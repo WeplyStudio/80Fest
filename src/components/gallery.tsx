@@ -5,63 +5,13 @@ import Image from "next/image";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import type { Artwork } from "@/lib/types";
-import { Camera, Heart } from "lucide-react";
-import { Button } from "./ui/button";
-import { useState, useEffect } from "react";
-import { addVote } from "@/lib/actions";
-import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
+import { Camera } from "lucide-react";
 
 interface GalleryProps {
   artworks: Artwork[];
 }
 
-const VOTED_ITEMS_KEY = 'votedArtworks';
-
-export function Gallery({ artworks: initialArtworks }: GalleryProps) {
-  const [artworks, setArtworks] = useState(initialArtworks);
-  const [votedIds, setVotedIds] = useState<Set<string>>(new Set());
-  const { toast } = useToast();
-
-  useEffect(() => {
-    const storedVotes = localStorage.getItem(VOTED_ITEMS_KEY);
-    if (storedVotes) {
-      setVotedIds(new Set(JSON.parse(storedVotes)));
-    }
-  }, []);
-
-  const handleVote = async (artworkId: string) => {
-    if (votedIds.has(artworkId)) {
-      toast({
-        variant: 'destructive',
-        title: "Sudah Pernah Vote",
-        description: "Anda hanya bisa memberikan satu suara untuk setiap karya.",
-      });
-      return;
-    }
-
-    const result = await addVote(artworkId);
-
-    if (result.success) {
-      const newVotedIds = new Set(votedIds).add(artworkId);
-      setVotedIds(newVotedIds);
-      localStorage.setItem(VOTED_ITEMS_KEY, JSON.stringify(Array.from(newVotedIds)));
-
-      setArtworks(currentArtworks =>
-        currentArtworks.map(art =>
-          art.id === artworkId ? { ...art, votes: (art.votes || 0) + 1 } : art
-        )
-      );
-      toast({ title: "Terima Kasih!", description: "Suara Anda telah dicatat." });
-    } else {
-      toast({
-        variant: 'destructive',
-        title: "Gagal Vote",
-        description: result.message,
-      });
-    }
-  };
-
+export function Gallery({ artworks }: GalleryProps) {
 
   return (
     <section id="gallery" className="space-y-12 section-padding">
@@ -99,17 +49,6 @@ export function Gallery({ artworks: initialArtworks }: GalleryProps) {
                         <CardTitle className="font-headline text-lg truncate group-hover:text-primary">{artwork.title}</CardTitle>
                         <p className="text-sm text-muted-foreground">{artwork.name} - {artwork.class}</p>
                     </CardContent>
-                    <CardFooter className="p-4 pt-0">
-                         <Button
-                            variant="outline"
-                            className="w-full"
-                            onClick={() => handleVote(artwork.id)}
-                            disabled={votedIds.has(artwork.id)}
-                        >
-                            <Heart className={cn("mr-2 h-4 w-4", votedIds.has(artwork.id) ? "text-red-500 fill-red-500" : "text-red-500")} />
-                            {artwork.votes ?? 0} Suka
-                        </Button>
-                    </CardFooter>
                 </Card>
                 <DialogContent className="max-w-4xl w-full">
                 <DialogHeader>
@@ -129,10 +68,6 @@ export function Gallery({ artworks: initialArtworks }: GalleryProps) {
                     <div>
                         <h3 className="font-semibold font-headline mb-2">Deskripsi Karya</h3>
                         <p className="text-muted-foreground">{artwork.description}</p>
-                        <div className="mt-4 flex items-center gap-2 text-muted-foreground">
-                            <Heart className="h-5 w-5 text-red-500"/>
-                            <span className="font-medium">{artwork.votes ?? 0} orang menyukai ini</span>
-                        </div>
                     </div>
                 </div>
                 </DialogContent>

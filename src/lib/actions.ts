@@ -33,7 +33,6 @@ export async function getArtworks(): Promise<Artwork[]> {
         return {
             ...rest,
             id: _id.toString(),
-            votes: art.votes ?? 0, // Ensure votes is not undefined
         } as Artwork;
     });
 }
@@ -74,7 +73,6 @@ export async function submitArtwork(formData: FormData) {
       imageHint: "poster design",
       status_juara: 0,
       isInGallery: false, // Default to not being in the gallery
-      votes: 0, // Initialize votes to 0
       createdAt: new Date(),
     });
 
@@ -211,27 +209,5 @@ export async function setSubmissionStatus(isOpen: boolean) {
     } catch (error) {
         console.error("Gagal mengubah status pendaftaran:", error);
         return { success: false, message: "Gagal mengubah status pendaftaran." };
-    }
-}
-
-// --- Voting Actions ---
-export async function addVote(artworkId: string) {
-    try {
-        const artworks = await getArtworksCollection();
-        const result = await artworks.updateOne(
-            { _id: new ObjectId(artworkId) },
-            { $inc: { votes: 1 } }
-        );
-
-        if (result.modifiedCount === 0) {
-            return { success: false, message: "Karya tidak ditemukan." };
-        }
-        
-        revalidatePath('/');
-        revalidatePath('/leaderboard');
-        return { success: true };
-    } catch (error) {
-        console.error("Gagal menambahkan suara:", error);
-        return { success: false, message: "Gagal memberikan suara." };
     }
 }

@@ -4,7 +4,7 @@
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Artwork } from '@/lib/types';
-import { Medal, Trophy, Heart } from 'lucide-react';
+import { Medal, Trophy } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface LeaderboardProps {
@@ -84,10 +84,6 @@ function WinnerCard({ artwork }: { artwork: Artwork }) {
                       <Medal className={`w-6 h-6 shrink-0 ${style.iconColor}`} />
                       <span className="font-semibold">{style.label}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-muted-foreground font-medium">
-                      <Heart className="w-5 h-5 text-red-500" />
-                      <span>{artwork.votes ?? 0}</span>
-                  </div>
                 </div>
                 <CardHeader className='p-0 pt-4'>
                     <CardTitle className="font-headline text-2xl">{artwork.title}</CardTitle>
@@ -118,10 +114,6 @@ function WinnerCard({ artwork }: { artwork: Artwork }) {
               <div>
                   <h3 className="font-semibold font-headline mb-2">Deskripsi Karya</h3>
                   <p className="text-muted-foreground">{artwork.description}</p>
-                  <div className="mt-4 flex items-center gap-2 text-muted-foreground">
-                      <Heart className="h-5 w-5 text-red-500"/>
-                      <span className="font-medium">{artwork.votes ?? 0} orang menyukai ini</span>
-                  </div>
               </div>
           </div>
       </DialogContent>

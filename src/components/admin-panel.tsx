@@ -30,7 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Eye, MoreHorizontal, Trash, Award, GalleryVertical, GalleryVerticalEnd, Pencil, Heart } from "lucide-react";
+import { Eye, MoreHorizontal, Trash, Award, GalleryVertical, GalleryVerticalEnd, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -156,11 +156,6 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus }: AdminPa
     return <Badge variant="secondary">Di Galeri</Badge>
   }
   
-  const getVotesBadge = (votes: number) => {
-    return <Badge variant="outline" className="flex items-center gap-1"><Heart className="w-3 h-3 text-red-500" /> {votes}</Badge>
-  }
-
-
   return (
     <div className="space-y-8">
       <div>
@@ -220,7 +215,6 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus }: AdminPa
                   <TableCell className="flex flex-wrap gap-1">
                       {getWinnerBadge(artwork.status_juara)}
                       {getGalleryBadge(artwork.isInGallery)}
-                      {getVotesBadge(artwork.votes)}
                   </TableCell>
                   <TableCell className="text-right">
                     <Dialog>
