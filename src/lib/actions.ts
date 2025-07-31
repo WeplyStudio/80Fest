@@ -61,15 +61,15 @@ export async function submitArtwork(formData: FormData) {
     const imageUrl = await fileToDataUri(file);
 
     await artworks.insertOne({
-      ...parsed.data, // This contains name, class, title, description
-      imageUrl: imageUrl, // Explicitly set the new image URL
+      ...parsed.data,
+      imageUrl: imageUrl,
       imageHint: "poster design",
       status_juara: 0,
+      isInGallery: false, // Default to not being in the gallery
       createdAt: new Date(),
     });
 
     revalidatePath("/");
-    revalidatePath("/gallery");
     revalidatePath("/admin");
 
     return { success: true };
@@ -86,14 +86,15 @@ export async function setWinnerStatus(artworkId: string, rank: number) {
         // Remove the rank from any current holder of that rank
         await artworks.updateOne({ status_juara: rank }, { $set: { status_juara: 0 } });
 
-        // Assign the new rank
+        // Assign the new rank and add to gallery
         await artworks.updateOne(
             { _id: new ObjectId(artworkId) },
-            { $set: { status_juara: rank } }
+            { $set: { status_juara: rank, isInGallery: true } }
         );
 
         revalidatePath('/admin');
         revalidatePath('/leaderboard');
+        revalidatePath('/');
         return { success: true };
     } catch (error) {
         console.error("Gagal mengatur pemenang:", error);
@@ -114,6 +115,22 @@ export async function removeWinnerStatus(artworkId: string) {
     } catch (error) {
         console.error("Gagal menghapus status pemenang:", error);
         return { success: false, message: 'Gagal menghapus status juara.' };
+    }
+}
+
+export async function toggleGalleryStatus(artworkId: string, currentStatus: boolean) {
+    try {
+        const artworks = await getArtworksCollection();
+        await artworks.updateOne(
+            { _id: new ObjectId(artworkId) },
+            { $set: { isInGallery: !currentStatus } }
+        );
+        revalidatePath('/admin');
+        revalidatePath('/');
+        return { success: true };
+    } catch (error) {
+        console.error("Gagal mengubah status galeri:", error);
+        return { success: false, message: 'Gagal mengubah status galeri.' };
     }
 }
 

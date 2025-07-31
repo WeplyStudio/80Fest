@@ -7,5 +7,6 @@ export type Artwork = {
   imageUrl: string;
   imageHint: string;
   status_juara: number; // 0 for none, 1 for 1st, 2 for 2nd, 3 for 3rd
+  isInGallery: boolean; // true if it should be shown in the public gallery
   createdAt: Date;
 };

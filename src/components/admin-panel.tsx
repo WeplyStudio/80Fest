@@ -29,7 +29,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Eye, MoreHorizontal, Trash, Award } from "lucide-react";
+import { Eye, MoreHorizontal, Trash, Award, GalleryVertical, GalleryVerticalEnd } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -42,7 +42,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { deleteArtwork, removeWinnerStatus, setWinnerStatus } from "@/lib/actions";
+import { deleteArtwork, removeWinnerStatus, setWinnerStatus, toggleGalleryStatus } from "@/lib/actions";
 
 export function AdminPanel({ initialArtworks }: { initialArtworks: Artwork[] }) {
   const [artworks, setArtworks] = useState<Artwork[]>(initialArtworks);
@@ -66,6 +66,18 @@ export function AdminPanel({ initialArtworks }: { initialArtworks: Artwork[] }) 
     }
   }
 
+  const handleToggleGallery = async (artworkId: string, currentStatus: boolean) => {
+    const result = await toggleGalleryStatus(artworkId, currentStatus);
+    if (result.success) {
+        toast({
+            title: "Status Galeri Diperbarui",
+            description: `Karya telah ${!currentStatus ? 'ditambahkan ke' : 'dihapus dari'} galeri.`
+        });
+    } else {
+        toast({ variant: 'destructive', title: "Gagal", description: result.message });
+    }
+  };
+
   const handleDelete = async (artworkId: string) => {
     const result = await deleteArtwork(artworkId);
     if (result.success) {
@@ -87,6 +99,11 @@ export function AdminPanel({ initialArtworks }: { initialArtworks: Artwork[] }) 
         3: "bg-amber-600 text-amber-50",
     }
     return <Badge className={colors[status]}>Juara {status}</Badge>
+  }
+
+  const getGalleryBadge = (inGallery: boolean) => {
+    if (!inGallery) return null;
+    return <Badge variant="secondary">Di Galeri</Badge>
   }
 
   return (
@@ -114,7 +131,10 @@ export function AdminPanel({ initialArtworks }: { initialArtworks: Artwork[] }) 
                 <TableCell className="font-medium">{artwork.title}</TableCell>
                 <TableCell>{artwork.name}</TableCell>
                 <TableCell>{artwork.class}</TableCell>
-                <TableCell>{getWinnerBadge(artwork.status_juara)}</TableCell>
+                <TableCell className="space-x-1">
+                    {getWinnerBadge(artwork.status_juara)}
+                    {getGalleryBadge(artwork.isInGallery)}
+                </TableCell>
                 <TableCell className="text-right">
                   <Dialog>
                     <AlertDialog>
@@ -133,6 +153,10 @@ export function AdminPanel({ initialArtworks }: { initialArtworks: Artwork[] }) 
                               Lihat Detail
                             </DropdownMenuItem>
                           </DialogTrigger>
+                          <DropdownMenuItem onClick={() => handleToggleGallery(artwork.id, artwork.isInGallery)}>
+                            {artwork.isInGallery ? <GalleryVerticalEnd className="mr-2 h-4 w-4" /> : <GalleryVertical className="mr-2 h-4 w-4" />}
+                            {artwork.isInGallery ? 'Hapus dari Galeri' : 'Tambahkan ke Galeri'}
+                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => handleSetWinner(artwork.id, 1)}>
                             <Award className="mr-2 h-4 w-4 text-yellow-500" />

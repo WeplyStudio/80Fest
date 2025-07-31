@@ -8,8 +8,8 @@ import { Upload } from "lucide-react";
 
 export default async function Home() {
   const allArtworks = await getArtworks();
-  // Hanya tampilkan karya pemenang di galeri publik
-  const galleryArtworks = allArtworks.filter(artwork => artwork.status_juara > 0);
+  // Hanya tampilkan karya yang ditandai untuk ada di galeri
+  const galleryArtworks = allArtworks.filter(artwork => artwork.isInGallery);
 
   return (
     <div className="space-y-16">
