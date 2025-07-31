@@ -15,6 +15,8 @@ const submissionSchema = z.object({
   // artworkFile is not part of the base schema as it's handled separately
 });
 
+const editSchema = submissionSchema.omit({ artworkFile: true });
+
 // Helper function to convert a file to a Data URI
 async function fileToDataUri(file: File): Promise<string> {
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -31,6 +33,7 @@ export async function getArtworks(): Promise<Artwork[]> {
         return {
             ...rest,
             id: _id.toString(),
+            votes: art.votes ?? 0, // Ensure votes is not undefined
         } as Artwork;
     });
 }
@@ -71,6 +74,7 @@ export async function submitArtwork(formData: FormData) {
       imageHint: "poster design",
       status_juara: 0,
       isInGallery: false, // Default to not being in the gallery
+      votes: 0, // Initialize votes to 0
       createdAt: new Date(),
     });
 
@@ -83,6 +87,32 @@ export async function submitArtwork(formData: FormData) {
     return { success: false, message: "Terjadi kesalahan pada server." };
   }
 }
+
+export async function updateArtwork(artworkId: string, formData: FormData) {
+    const rawFormData = Object.fromEntries(formData.entries());
+    const parsed = editSchema.safeParse(rawFormData);
+
+    if (!parsed.success) {
+        return { success: false, message: 'Data tidak valid.' };
+    }
+
+    try {
+        const artworks = await getArtworksCollection();
+        await artworks.updateOne(
+            { _id: new ObjectId(artworkId) },
+            { $set: parsed.data }
+        );
+
+        revalidatePath('/admin');
+        revalidatePath('/');
+        revalidatePath('/leaderboard');
+        return { success: true };
+    } catch (error) {
+        console.error("Gagal memperbarui data:", error);
+        return { success: false, message: "Gagal memperbarui data karya." };
+    }
+}
+
 
 export async function setWinnerStatus(artworkId: string, rank: number) {
     try {
@@ -181,5 +211,27 @@ export async function setSubmissionStatus(isOpen: boolean) {
     } catch (error) {
         console.error("Gagal mengubah status pendaftaran:", error);
         return { success: false, message: "Gagal mengubah status pendaftaran." };
+    }
+}
+
+// --- Voting Actions ---
+export async function addVote(artworkId: string) {
+    try {
+        const artworks = await getArtworksCollection();
+        const result = await artworks.updateOne(
+            { _id: new ObjectId(artworkId) },
+            { $inc: { votes: 1 } }
+        );
+
+        if (result.modifiedCount === 0) {
+            return { success: false, message: "Karya tidak ditemukan." };
+        }
+        
+        revalidatePath('/');
+        revalidatePath('/leaderboard');
+        return { success: true };
+    } catch (error) {
+        console.error("Gagal menambahkan suara:", error);
+        return { success: false, message: "Gagal memberikan suara." };
     }
 }
