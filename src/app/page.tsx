@@ -7,7 +7,9 @@ import { getArtworks } from "@/lib/actions";
 import { Upload } from "lucide-react";
 
 export default async function Home() {
-  const artworks = await getArtworks();
+  const allArtworks = await getArtworks();
+  // Hanya tampilkan karya pemenang di galeri publik
+  const galleryArtworks = allArtworks.filter(artwork => artwork.status_juara > 0);
 
   return (
     <div className="space-y-16">
@@ -35,7 +37,7 @@ export default async function Home() {
 
       <Separator />
 
-      <Gallery artworks={artworks} />
+      <Gallery artworks={galleryArtworks} />
     </div>
   );
 }
