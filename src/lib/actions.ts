@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getArtworksCollection } from "./mongodb";
 import { revalidatePath } from "next/cache";
 import { ObjectId } from "mongodb";
+import type { Artwork } from "./types";
 
 const submissionSchema = z.object({
   name: z.string().min(1),
@@ -14,6 +15,17 @@ const submissionSchema = z.object({
   // In a real app, this would handle the file upload to a storage service.
   artworkFile: z.any(),
 });
+
+export async function getArtworks(): Promise<Artwork[]> {
+    const collection = await getArtworksCollection();
+    const artworks = await collection.find({}).sort({ createdAt: -1 }).toArray();
+    
+    // Convert ObjectId to string for client-side usage
+    return artworks.map(art => ({
+        ...art,
+        id: art._id.toString(),
+    })) as unknown as Artwork[];
+}
 
 export async function submitArtwork(formData: FormData) {
   const rawFormData = Object.fromEntries(formData.entries());

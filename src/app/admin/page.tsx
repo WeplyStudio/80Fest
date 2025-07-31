@@ -11,7 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Lock } from "lucide-react";
-import { getArtworks } from "@/lib/mongodb";
+import { getArtworks } from "@/lib/actions";
 import { Artwork } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 

@@ -1,5 +1,5 @@
 import { Leaderboard } from "@/components/leaderboard";
-import { getArtworks } from "@/lib/mongodb";
+import { getArtworks } from "@/lib/actions";
 
 export default async function LeaderboardPage() {
   const allArtworks = await getArtworks();

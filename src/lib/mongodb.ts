@@ -43,14 +43,3 @@ export async function getArtworksCollection(): Promise<Collection<Document>> {
     const db = await getDb();
     return db.collection('artworks');
 }
-
-export async function getArtworks(): Promise<Artwork[]> {
-    const collection = await getArtworksCollection();
-    const artworks = await collection.find({}).sort({ createdAt: -1 }).toArray();
-    
-    // Convert ObjectId to string for client-side usage
-    return artworks.map(art => ({
-        ...art,
-        id: art._id.toString(),
-    })) as unknown as Artwork[];
-}

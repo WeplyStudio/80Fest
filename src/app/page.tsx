@@ -3,7 +3,7 @@ import { Gallery } from "@/components/gallery";
 import { SubmissionDialog } from "@/components/submission-dialog";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { getArtworks } from "@/lib/mongodb";
+import { getArtworks } from "@/lib/actions";
 import { Upload } from "lucide-react";
 
 export default async function Home() {
