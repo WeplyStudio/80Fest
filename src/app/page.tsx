@@ -1,3 +1,4 @@
+
 import { ContestInfo } from "@/components/contest-info";
 import { Gallery } from "@/components/gallery";
 import { SubmissionDialog } from "@/components/submission-dialog";
@@ -14,7 +15,7 @@ export default async function Home() {
   return (
     <div className="space-y-16">
       <section id="hero" className="text-center py-16">
-        <h1 className="text-5xl md:text-7xl font-bold font-headline bg-clip-text text-transparent bg-gradient-to-r from-red-600 to-white-500" style={{WebkitTextStroke: '1px black'}}>
+        <h1 className="text-5xl md:text-7xl font-bold font-headline text-red-600" style={{WebkitTextStroke: '1px black'}}>
           80Fest 2025
         </h1>
         <p className="mt-4 text-lg md:text-xl max-w-2xl mx-auto text-muted-foreground">
