@@ -32,6 +32,9 @@ export default function AdminPage() {
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
+    defaultValues: {
+        password: "",
+    },
   });
   
   useEffect(() => {
