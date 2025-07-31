@@ -1,5 +1,6 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Palette, ScrollText } from "lucide-react";
+import { Calendar, Palette, ScrollText, ClipboardCheck } from "lucide-react";
 
 const infoItems = [
   {
@@ -30,6 +31,18 @@ const infoItems = [
         </ul>
     ),
   },
+  {
+    icon: ClipboardCheck,
+    title: "Kriteria Penilaian",
+    content: (
+        <ul className="list-disc pl-5 space-y-1">
+            <li>Kesesuaian desain dengan tema</li>
+            <li>Tata letak (Layout)</li>
+            <li>Penggunaan font dan warna</li>
+            <li>Isi/konten informatif dari poster</li>
+        </ul>
+    ),
+  },
 ];
 
 
@@ -40,7 +53,7 @@ export function ContestInfo() {
             <h2 className="text-3xl font-bold font-headline text-primary">Informasi Lomba</h2>
             <p className="text-muted-foreground mt-2">Semua yang perlu kamu ketahui untuk berpartisipasi.</p>
         </div>
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {infoItems.map((item, index) => (
                 <Card key={index} className="flex flex-col bg-transparent border-0 shadow-none">
                     <CardHeader className="flex flex-row items-center gap-4 p-0">
