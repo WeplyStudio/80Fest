@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -23,6 +24,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 // In a real app, this would be a secure token or proper auth flow.
 const ADMIN_PASSWORD = "osis-keren-2024";
+const AUTH_COOKIE_NAME = "admin-authenticated";
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -36,9 +38,18 @@ export default function AdminPage() {
         password: "",
     },
   });
+
+  // Check for auth cookie on initial load
+  useEffect(() => {
+    const cookie = document.cookie.split('; ').find(row => row.startsWith(`${AUTH_COOKIE_NAME}=`));
+    if (cookie?.split('=')[1] === 'true') {
+      setIsAuthenticated(true);
+    }
+  }, []);
   
   useEffect(() => {
     if (isAuthenticated) {
+      setLoading(true);
       getArtworks()
         .then(data => {
             setArtworks(data);
@@ -56,6 +67,8 @@ export default function AdminPage() {
   function onSubmit(data: LoginFormValues) {
     if (data.password === ADMIN_PASSWORD) {
       toast({ title: "Login Berhasil", description: "Selamat datang, Admin!" });
+      // Set a cookie that expires in 7 days
+      document.cookie = `${AUTH_COOKIE_NAME}=true; path=/; max-age=604800`;
       setIsAuthenticated(true);
     } else {
       toast({
@@ -122,3 +135,4 @@ export default function AdminPage() {
     </div>
   );
 }
+
