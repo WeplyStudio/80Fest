@@ -25,7 +25,7 @@ const infoItems = [
         <ul className="list-disc pl-5 space-y-1">
             <li>Karya harus orisinal dan belum pernah dipublikasikan.</li>
             <li>Peserta adalah siswa aktif sekolah ini.</li>
-            <li>Format file yang diterima adalah PNG atau JPG, maks. 5MB.</li>
+            <li>Format file yang diterima adalah PNG atau JPG, maks. 50MB.</li>
             <li>Keputusan juri bersifat mutlak dan tidak dapat diganggu gugat.</li>
         </ul>
     ),
@@ -35,7 +35,7 @@ const infoItems = [
 
 export function ContestInfo() {
   return (
-    <section id="info" className="space-y-12">
+    <section id="info" className="space-y-12 section-padding container">
         <div className="text-center">
             <h2 className="text-3xl font-bold font-headline text-primary">Informasi Lomba</h2>
             <p className="text-muted-foreground mt-2">Semua yang perlu kamu ketahui untuk berpartisipasi.</p>

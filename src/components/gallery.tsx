@@ -10,10 +10,10 @@ interface GalleryProps {
 
 export function Gallery({ artworks }: GalleryProps) {
   return (
-    <section id="gallery" className="space-y-12">
+    <section id="gallery" className="space-y-12 section-padding">
       <div className="text-center">
         <h2 className="text-3xl font-bold font-headline text-primary">Galeri Karya</h2>
-        <p className="text-muted-foreground mt-2">Lihat karya-karya luar biasa dari para peserta.</p>
+        <p className="text-muted-foreground mt-2">Lihat karya-karya luar biasa dari para peserta pilihan.</p>
       </div>
        {artworks.length === 0 ? (
         <div className="text-center py-16 border-2 border-dashed rounded-lg">
@@ -28,7 +28,7 @@ export function Gallery({ artworks }: GalleryProps) {
             {artworks.map((artwork) => (
             <Dialog key={artwork.id}>
                 <DialogTrigger asChild>
-                <Card className="overflow-hidden cursor-pointer group transition-all hover:shadow-xl hover:-translate-y-1">
+                <Card className="overflow-hidden cursor-pointer group transition-all hover:shadow-xl hover:-translate-y-1 bg-card/80 backdrop-blur-sm">
                     <CardHeader className="p-0">
                     <div className="aspect-[3/4] relative">
                         <Image
@@ -40,7 +40,7 @@ export function Gallery({ artworks }: GalleryProps) {
                         />
                     </div>
                     </CardHeader>
-                    <CardContent className="p-4 bg-card">
+                    <CardContent className="p-4">
                     <CardTitle className="font-headline text-lg truncate group-hover:text-primary">{artwork.title}</CardTitle>
                     <p className="text-sm text-muted-foreground">{artwork.name} - {artwork.class}</p>
                     </CardContent>
@@ -52,7 +52,7 @@ export function Gallery({ artworks }: GalleryProps) {
                     <DialogDescription>{artwork.name} - {artwork.class}</DialogDescription>
                 </DialogHeader>
                 <div className="grid md:grid-cols-2 gap-6 items-start">
-                    <div className="aspect-[3/4] relative rounded-md overflow-hidden">
+                    <div className="aspect-[3/4] relative rounded-md overflow-hidden bg-muted">
                         <Image
                             src={artwork.imageUrl}
                             alt={artwork.title}
