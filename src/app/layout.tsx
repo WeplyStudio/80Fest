@@ -5,8 +5,8 @@ import { Footer } from "@/components/layout/footer";
 import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
-  title: "Osis - Lomba Desain Poster",
-  description: "Platform untuk lomba desain poster infografis OSIS.",
+  title: "80Fest - Lomba Desain Poster",
+  description: "Platform untuk lomba desain poster infografis 80Fest.",
 };
 
 export default function RootLayout({
