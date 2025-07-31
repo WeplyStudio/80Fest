@@ -1,8 +1,9 @@
 import { Leaderboard } from "@/components/leaderboard";
-import { artworks } from "@/lib/mock-data";
+import { getArtworks } from "@/lib/mongodb";
 
-export default function LeaderboardPage() {
-  const winners = artworks
+export default async function LeaderboardPage() {
+  const allArtworks = await getArtworks();
+  const winners = allArtworks
     .filter((artwork) => artwork.status_juara > 0)
     .sort((a, b) => a.status_juara - b.status_juara);
 

@@ -1,14 +1,14 @@
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import type { Artwork } from '@/lib/mock-data';
+import type { Artwork } from '@/lib/types';
 import { Medal, Trophy } from 'lucide-react';
 
 interface LeaderboardProps {
   winners: Artwork[];
 }
 
-const winnerStyles = {
+const winnerStyles: { [key: number]: { card: string; iconColor: string; bgColor: string; textColor: string; label: string; } } = {
   1: {
     card: 'border-yellow-400 border-2 shadow-yellow-200/50 shadow-lg',
     iconColor: 'text-yellow-400',
@@ -61,7 +61,7 @@ export function Leaderboard({ winners }: LeaderboardProps) {
 }
 
 function WinnerCard({ artwork }: { artwork: Artwork }) {
-  const style = winnerStyles[artwork.status_juara as keyof typeof winnerStyles];
+  const style = winnerStyles[artwork.status_juara];
   
   return (
      <Card className={`overflow-hidden transition-all ${style.card}`}>

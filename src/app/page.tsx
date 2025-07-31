@@ -3,10 +3,12 @@ import { Gallery } from "@/components/gallery";
 import { SubmissionDialog } from "@/components/submission-dialog";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { artworks } from "@/lib/mock-data";
+import { getArtworks } from "@/lib/mongodb";
 import { Upload } from "lucide-react";
 
-export default function Home() {
+export default async function Home() {
+  const artworks = await getArtworks();
+
   return (
     <div className="space-y-16">
       <section id="hero" className="text-center py-16">
