@@ -15,7 +15,7 @@ export default async function Home() {
     <div className="space-y-24">
       <section id="hero" className="text-center">
         <h1 className="text-5xl md:text-7xl font-bold font-headline text-primary">
-          VisiKreasi 2025
+          80Fest 2025
         </h1>
         <p className="mt-4 text-lg md:text-xl max-w-2xl mx-auto text-muted-foreground">
           Tunjukkan bakat desainmu dalam lomba poster infografis tahun ini!

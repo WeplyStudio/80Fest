@@ -1,3 +1,4 @@
+
 import { Leaderboard } from "@/components/leaderboard";
 import { getArtworks } from "@/lib/actions";
 
@@ -12,7 +13,7 @@ export default async function LeaderboardPage() {
       <div className="text-center">
         <h1 className="text-4xl md:text-5xl font-bold font-headline text-primary">Leaderboard Juara</h1>
         <p className="mt-2 text-lg text-muted-foreground">
-          Selamat kepada para pemenang lomba desain poster VisiKreasi!
+          Selamat kepada para pemenang lomba desain poster 80Fest!
         </p>
       </div>
       <Leaderboard winners={winners} />
