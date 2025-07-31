@@ -12,9 +12,9 @@ const infoItems = [
     title: "Jadwal Penting",
     content: (
         <ul className="list-disc pl-5 space-y-1">
-            <li><strong>Pendaftaran & Pengumpulan:</strong> 1 - 15 Oktober 2024</li>
-            <li><strong>Periode Penjurian:</strong> 16 - 20 Oktober 2024</li>
-            <li><strong>Pengumuman Pemenang:</strong> 22 Oktober 2024</li>
+            <li><strong>Pendaftaran & Pengumpulan:</strong> 1 - 15 Oktober 2025</li>
+            <li><strong>Periode Penjurian:</strong> 16 - 20 Oktober 2025</li>
+            <li><strong>Pengumuman Pemenang:</strong> 22 Oktober 2025</li>
         </ul>
     ),
   },
