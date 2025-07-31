@@ -5,8 +5,8 @@ import { Footer } from "@/components/layout/footer";
 import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
-  title: "80Fest - Lomba Desain Poster",
-  description: "Platform untuk lomba desain poster infografis 80Fest.",
+  title: "VisiKreasi - Lomba Desain Poster",
+  description: "Platform untuk lomba desain poster infografis VisiKreasi.",
 };
 
 export default function RootLayout({
@@ -25,7 +25,7 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <div className="flex flex-col min-h-screen">
           <Header />
-          <main className="flex-grow container mx-auto px-4 py-8">
+          <main className="flex-grow container mx-auto px-4 py-8 md:py-16">
             {children}
           </main>
           <Footer />

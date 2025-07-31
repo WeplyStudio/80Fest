@@ -1,5 +1,4 @@
 import Image from 'next/image';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Artwork } from '@/lib/types';
 import { Medal, Trophy } from 'lucide-react';
@@ -8,26 +7,23 @@ interface LeaderboardProps {
   winners: Artwork[];
 }
 
-const winnerStyles: { [key: number]: { card: string; iconColor: string; bgColor: string; textColor: string; label: string; } } = {
+const winnerStyles: { [key: number]: { card: string; iconColor: string; bgColor: string; label: string; } } = {
   1: {
-    card: 'border-yellow-400 border-2 shadow-yellow-200/50 shadow-lg',
+    card: 'border-yellow-400 shadow-yellow-200/50 shadow-lg',
     iconColor: 'text-yellow-400',
     bgColor: 'bg-yellow-400/10',
-    textColor: 'text-yellow-500',
     label: 'Juara 1',
   },
   2: {
-    card: 'border-gray-400 border-2 shadow-gray-200/50 shadow-md',
+    card: 'border-gray-400 shadow-gray-200/50 shadow-md',
     iconColor: 'text-gray-400',
     bgColor: 'bg-gray-400/10',
-    textColor: 'text-gray-500',
     label: 'Juara 2',
   },
   3: {
-    card: 'border-amber-600 border-2 shadow-amber-900/20 shadow-md',
+    card: 'border-amber-600 shadow-amber-900/20 shadow-md',
     iconColor: 'text-amber-600',
     bgColor: 'bg-amber-600/10',
-    textColor: 'text-amber-700',
     label: 'Juara 3',
   },
 };
@@ -64,18 +60,9 @@ function WinnerCard({ artwork }: { artwork: Artwork }) {
   const style = winnerStyles[artwork.status_juara];
   
   return (
-     <Card className={`overflow-hidden transition-all ${style.card}`}>
-        <CardHeader className={`p-4 ${style.bgColor}`}>
-          <div className="flex items-center gap-4">
-             <Medal className={`w-10 h-10 shrink-0 ${style.iconColor}`} />
-             <div>
-                <Badge variant="secondary" className={`${style.textColor} ${style.bgColor} border ${style.iconColor}`}>{style.label}</Badge>
-                <CardTitle className="font-headline text-2xl mt-1">{artwork.title}</CardTitle>
-             </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-4 md:p-6 grid md:grid-cols-2 gap-6">
-            <div className="aspect-[3/4] relative rounded-md overflow-hidden">
+     <Card className={`overflow-hidden transition-all bg-card ${style.card}`}>
+        <div className="grid md:grid-cols-2 items-start">
+            <div className="aspect-[3/4] relative rounded-md overflow-hidden m-4">
                 <Image
                     src={artwork.imageUrl}
                     alt={artwork.title}
@@ -84,12 +71,21 @@ function WinnerCard({ artwork }: { artwork: Artwork }) {
                     data-ai-hint={artwork.imageHint}
                 />
             </div>
-            <div>
-                <h3 className="font-semibold">{artwork.name}</h3>
-                <p className="text-sm text-muted-foreground mb-4">{artwork.class}</p>
-                <p className="text-sm">{artwork.description}</p>
+            <div className='p-6'>
+                <div className={`inline-flex items-center gap-2 p-2 pr-3 rounded-full ${style.bgColor}`}>
+                    <Medal className={`w-6 h-6 shrink-0 ${style.iconColor}`} />
+                    <span className="font-semibold">{style.label}</span>
+                </div>
+                <CardHeader className='p-0 pt-4'>
+                    <CardTitle className="font-headline text-2xl">{artwork.title}</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0 pt-4">
+                    <h3 className="font-semibold">{artwork.name}</h3>
+                    <p className="text-sm text-muted-foreground mb-4">{artwork.class}</p>
+                    <p className="text-sm text-muted-foreground">{artwork.description}</p>
+                </CardContent>
             </div>
-        </CardContent>
+        </div>
     </Card>
   )
 }

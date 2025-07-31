@@ -80,7 +80,7 @@ export function SubmissionDialog({ children }: { children: ReactNode }) {
     if (result.success) {
       toast({
         title: "Karya Berhasil Diupload!",
-        description: "Terima kasih atas partisipasimu. Karyamu akan segera tampil di galeri.",
+        description: "Terima kasih atas partisipasimu. Karyamu akan segera ditinjau oleh admin.",
       });
       setOpen(false);
       form.reset();
@@ -183,7 +183,7 @@ export function SubmissionDialog({ children }: { children: ReactNode }) {
               )}
             />
             <DialogFooter>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting} className="bg-accent text-accent-foreground hover:bg-accent/90">
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
