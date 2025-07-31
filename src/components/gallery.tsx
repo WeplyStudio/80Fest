@@ -1,3 +1,4 @@
+
 import Image from "next/image";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -46,18 +47,18 @@ export function Gallery({ artworks }: GalleryProps) {
                     </CardContent>
                 </Card>
                 </DialogTrigger>
-                <DialogContent className="max-w-3xl">
+                <DialogContent className="max-w-4xl w-full">
                 <DialogHeader>
                     <DialogTitle className="font-headline text-2xl">{artwork.title}</DialogTitle>
                     <DialogDescription>{artwork.name} - {artwork.class}</DialogDescription>
                 </DialogHeader>
                 <div className="grid md:grid-cols-2 gap-6 items-start">
-                    <div className="aspect-[3/4] relative rounded-md overflow-hidden bg-muted">
+                    <div className="aspect-[2480/3508] w-full relative rounded-md overflow-hidden bg-muted">
                         <Image
                             src={artwork.imageUrl}
                             alt={artwork.title}
                             fill
-                            className="object-cover"
+                            className="object-contain"
                             data-ai-hint={artwork.imageHint}
                         />
                     </div>

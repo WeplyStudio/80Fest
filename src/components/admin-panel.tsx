@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -182,7 +183,7 @@ export function AdminPanel({ initialArtworks }: { initialArtworks: Artwork[] }) 
                       </DropdownMenu>
 
                       {/* Dialog for View Details */}
-                      <DialogContent className="max-w-3xl">
+                      <DialogContent className="max-w-4xl w-full">
                         <DialogHeader>
                           <DialogTitle className="font-headline text-2xl">{artwork.title}</DialogTitle>
                           <DialogDescription>
@@ -190,12 +191,12 @@ export function AdminPanel({ initialArtworks }: { initialArtworks: Artwork[] }) 
                           </DialogDescription>
                         </DialogHeader>
                         <div className="grid md:grid-cols-2 gap-6 items-start">
-                            <div className="aspect-[3/4] relative rounded-md overflow-hidden bg-muted">
+                            <div className="aspect-[2480/3508] w-full relative rounded-md overflow-hidden bg-muted">
                                 <Image
                                     src={artwork.imageUrl}
                                     alt={artwork.title}
                                     fill
-                                    className="object-cover"
+                                    className="object-contain"
                                     data-ai-hint={artwork.imageHint}
                                 />
                             </div>

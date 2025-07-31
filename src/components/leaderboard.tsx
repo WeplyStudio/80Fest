@@ -1,7 +1,9 @@
+
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Artwork } from '@/lib/types';
 import { Medal, Trophy } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface LeaderboardProps {
   winners: Artwork[];
@@ -60,17 +62,20 @@ function WinnerCard({ artwork }: { artwork: Artwork }) {
   const style = winnerStyles[artwork.status_juara];
   
   return (
-     <Card className={`overflow-hidden transition-all bg-card ${style.card}`}>
+    <Dialog>
+      <Card className={`overflow-hidden transition-all bg-card ${style.card}`}>
         <div className="grid md:grid-cols-2 items-start">
-            <div className="aspect-[3/4] relative rounded-md overflow-hidden m-4">
-                <Image
-                    src={artwork.imageUrl}
-                    alt={artwork.title}
-                    fill
-                    className="object-cover"
-                    data-ai-hint={artwork.imageHint}
-                />
-            </div>
+            <DialogTrigger asChild>
+              <div className="aspect-[3/4] relative rounded-md overflow-hidden m-4 cursor-pointer">
+                  <Image
+                      src={artwork.imageUrl}
+                      alt={artwork.title}
+                      fill
+                      className="object-cover"
+                      data-ai-hint={artwork.imageHint}
+                  />
+              </div>
+            </DialogTrigger>
             <div className='p-6'>
                 <div className={`inline-flex items-center gap-2 p-2 pr-3 rounded-full ${style.bgColor}`}>
                     <Medal className={`w-6 h-6 shrink-0 ${style.iconColor}`} />
@@ -86,6 +91,28 @@ function WinnerCard({ artwork }: { artwork: Artwork }) {
                 </CardContent>
             </div>
         </div>
-    </Card>
+      </Card>
+      <DialogContent className="max-w-4xl w-full">
+          <DialogHeader>
+              <DialogTitle className="font-headline text-2xl">{artwork.title}</DialogTitle>
+              <DialogDescription>{artwork.name} - {artwork.class}</DialogDescription>
+          </DialogHeader>
+          <div className="grid md:grid-cols-2 gap-6 items-start">
+              <div className="aspect-[2480/3508] w-full relative rounded-md overflow-hidden bg-muted">
+                  <Image
+                      src={artwork.imageUrl}
+                      alt={artwork.title}
+                      fill
+                      className="object-contain"
+                      data-ai-hint={artwork.imageHint}
+                  />
+              </div>
+              <div>
+                  <h3 className="font-semibold font-headline mb-2">Deskripsi Karya</h3>
+                  <p className="text-muted-foreground">{artwork.description}</p>
+              </div>
+          </div>
+      </DialogContent>
+    </Dialog>
   )
 }
