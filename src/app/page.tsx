@@ -1,9 +1,10 @@
+
 import { ContestInfo } from "@/components/contest-info";
 import { Gallery } from "@/components/gallery";
-import { SubmissionDialog } from "@/components/submission-dialog";
 import { Button } from "@/components/ui/button";
 import { getArtworks, getSubmissionStatus } from "@/lib/actions";
 import { Upload, XCircle } from "lucide-react";
+import Link from "next/link";
 
 export default async function Home() {
   const allArtworks = await getArtworks();
@@ -22,12 +23,12 @@ export default async function Home() {
         </p>
         <div className="mt-8">
           {isSubmissionOpen ? (
-            <SubmissionDialog>
-              <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg shadow-accent/20">
+            <Button size="lg" asChild className="bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg shadow-accent/20">
+              <Link href="/submit">
                 <Upload className="mr-2" />
                 Upload Karya Sekarang
-              </Button>
-            </SubmissionDialog>
+              </Link>
+            </Button>
           ) : (
              <Button size="lg" disabled>
                 <XCircle className="mr-2" />

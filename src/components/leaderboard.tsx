@@ -1,8 +1,9 @@
 
 "use client";
 
+import { useState } from 'react';
 import Image from 'next/image';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Artwork, JudgeScore } from '@/lib/types';
 import { Medal, Trophy, Star } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -16,6 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { CommentSection } from './comment-section';
+import React from 'react';
 
 interface LeaderboardProps {
   rankedArtworks: Artwork[];
@@ -42,7 +44,17 @@ const winnerStyles: { [key: number]: { card: string; iconColor: string; bgColor:
   },
 };
 
-export function Leaderboard({ rankedArtworks }: LeaderboardProps) {
+export function Leaderboard({ rankedArtworks: initialArtworks }: LeaderboardProps) {
+  const [rankedArtworks, setRankedArtworks] = useState(initialArtworks);
+
+   const handleArtworkUpdate = (updatedArtwork: Artwork) => {
+      setRankedArtworks(currentArtworks => 
+          currentArtworks.map(art => art.id === updatedArtwork.id ? updatedArtwork : art)
+      );
+  };
+  
+  const findArtworkById = (id: string) => rankedArtworks.find(art => art.id === id);
+
   if (rankedArtworks.length === 0) {
     return (
       <div className="text-center py-16 border-2 border-dashed rounded-lg">
@@ -62,7 +74,7 @@ export function Leaderboard({ rankedArtworks }: LeaderboardProps) {
     <div className="space-y-10">
       {topThree.length > 0 && (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {topThree.map((winner, index) => <WinnerCard key={winner.id} artwork={winner} rank={index + 1} />)}
+            {topThree.map((winner, index) => <WinnerCard key={winner.id} artwork={winner} rank={index + 1} onArtworkUpdate={handleArtworkUpdate} findArtworkById={findArtworkById}/>)}
           </div>
       )}
       {others.length > 0 && <OtherRanks artworks={others} />}
@@ -70,8 +82,16 @@ export function Leaderboard({ rankedArtworks }: LeaderboardProps) {
   );
 }
 
-function WinnerCard({ artwork, rank }: { artwork: Artwork, rank: number }) {
+interface WinnerCardProps {
+    artwork: Artwork;
+    rank: number;
+    onArtworkUpdate: (updatedArtwork: Artwork) => void;
+    findArtworkById: (id: string) => Artwork | undefined;
+}
+
+function WinnerCard({ artwork, rank, onArtworkUpdate, findArtworkById }: WinnerCardProps) {
   const style = winnerStyles[rank];
+  const currentArtwork = findArtworkById(artwork.id) || artwork;
   
   return (
     <Dialog>
@@ -84,23 +104,23 @@ function WinnerCard({ artwork, rank }: { artwork: Artwork, rank: number }) {
               </div>
               <Badge variant="outline" className="text-lg py-1 px-3">
                 <Star className="w-4 h-4 mr-2 text-yellow-500 fill-yellow-500" />
-                {artwork.totalPoints} Poin
+                {currentArtwork.totalPoints} Poin
               </Badge>
             </div>
             <CardHeader className='p-0 pt-4'>
-                <CardTitle className="font-headline text-2xl">{artwork.title}</CardTitle>
+                <CardTitle className="font-headline text-2xl">{currentArtwork.title}</CardTitle>
             </CardHeader>
             <CardContent className="p-0 pt-4">
-                <h3 className="font-semibold">{artwork.name}</h3>
-                <p className="text-sm text-muted-foreground mb-4">{artwork.class}</p>
+                <h3 className="font-semibold">{currentArtwork.name}</h3>
+                <p className="text-sm text-muted-foreground mb-4">{currentArtwork.class}</p>
                  <DialogTrigger asChild>
                   <div className="aspect-[3/4] relative rounded-md overflow-hidden cursor-pointer group">
                       <Image
-                          src={artwork.imageUrl}
-                          alt={artwork.title}
+                          src={currentArtwork.imageUrl}
+                          alt={currentArtwork.title}
                           fill
                           className="object-cover transition-transform group-hover:scale-105"
-                          data-ai-hint={artwork.imageHint}
+                          data-ai-hint={currentArtwork.imageHint}
                       />
                       <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <p className="text-white font-semibold">Lihat Detail</p>
@@ -112,25 +132,29 @@ function WinnerCard({ artwork, rank }: { artwork: Artwork, rank: number }) {
       </Card>
       <DialogContent className="max-w-4xl w-full max-h-[90svh] overflow-y-auto">
           <DialogHeader>
-              <DialogTitle className="font-headline text-2xl">{artwork.title}</DialogTitle>
-              <DialogDescription>{artwork.name} - {artwork.class}</DialogDescription>
+              <DialogTitle className="font-headline text-2xl">{currentArtwork.title}</DialogTitle>
+              <DialogDescription>{currentArtwork.name} - {currentArtwork.class}</DialogDescription>
           </DialogHeader>
           <div className="grid md:grid-cols-2 gap-6 items-start">
-              <div className="aspect-[2480/3508] w-full relative rounded-md overflow-hidden bg-muted">
+              <div className="aspect-[3/4] w-full relative rounded-md overflow-hidden bg-muted">
                   <Image
-                      src={artwork.imageUrl}
-                      alt={artwork.title}
+                      src={currentArtwork.imageUrl}
+                      alt={currentArtwork.title}
                       fill
                       className="object-contain"
-                      data-ai-hint={artwork.imageHint}
+                      data-ai-hint={currentArtwork.imageHint}
                   />
               </div>
-              <div>
-                  <h3 className="font-semibold font-headline mb-2">Deskripsi Karya</h3>
-                  <p className="text-muted-foreground mb-4">{artwork.description}</p>
-                  <h3 className="font-semibold font-headline mb-2">Rincian Poin</h3>
-                  <ScoreTable scores={artwork.scores || []} totalPoints={artwork.totalPoints || 0} />
-                  <CommentSection artwork={artwork} />
+              <div className="flex flex-col gap-4">
+                  <div>
+                    <h3 className="font-semibold font-headline mb-2">Deskripsi Karya</h3>
+                    <p className="text-muted-foreground mb-4 text-sm">{currentArtwork.description}</p>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold font-headline mb-2">Rincian Poin</h3>
+                    <ScoreTable scores={currentArtwork.scores || []} totalPoints={currentArtwork.totalPoints || 0} />
+                  </div>
+                  <CommentSection artwork={currentArtwork} onArtworkUpdate={onArtworkUpdate} />
               </div>
           </div>
       </DialogContent>
@@ -178,18 +202,30 @@ function ScoreTable({ scores, totalPoints }: { scores: JudgeScore[], totalPoints
                 <TableHeader>
                     <TableRow>
                         <TableHead>Juri</TableHead>
+                        <TableHead>Kriteria</TableHead>
                         <TableHead className="text-right">Poin</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {scores.map(score => (
-                        <TableRow key={score.judgeName}>
-                            <TableCell>{score.judgeName}</TableCell>
-                            <TableCell className="text-right">{score.score}</TableCell>
-                        </TableRow>
+                     {scores.map((score, scoreIndex) => (
+                        <React.Fragment key={`${score.judgeName}-${scoreIndex}`}>
+                            <TableRow>
+                                <TableCell rowSpan={5} className="font-medium align-top pt-4">{score.judgeName}</TableCell>
+                                <TableCell>Kesesuaian Tema</TableCell>
+                                <TableCell className="text-right">{score.criteria.theme_match}</TableCell>
+                            </TableRow>
+                            <TableRow><TableCell>Tata Letak</TableCell><TableCell className="text-right">{score.criteria.layout}</TableCell></TableRow>
+                            <TableRow><TableCell>Tipografi & Warna</TableCell><TableCell className="text-right">{score.criteria.typography_color}</TableCell></TableRow>
+                            <TableRow><TableCell>Kejelasan Isi</TableCell><TableCell className="text-right">{score.criteria.content_clarity}</TableCell></TableRow>
+                            <TableRow className="bg-muted/30">
+                                <TableCell className="font-semibold">Subtotal Juri</TableCell>
+                                <TableCell className="text-right font-semibold">{score.totalScore}</TableCell>
+                            </TableRow>
+                        </React.Fragment>
                     ))}
-                    <TableRow className="bg-muted/50 font-bold">
-                        <TableCell>Total</TableCell>
+                    {scores.length > 0 && <TableRow><TableCell colSpan={3} className="p-0"><div className="h-px bg-border w-full"></div></TableCell></TableRow>}
+                    <TableRow className="bg-muted/50 font-bold text-base">
+                        <TableCell colSpan={2}>Total Akhir</TableCell>
                         <TableCell className="text-right">{totalPoints}</TableCell>
                     </TableRow>
                 </TableBody>

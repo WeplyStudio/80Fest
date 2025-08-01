@@ -5,9 +5,15 @@ import { z } from "zod";
 import { getArtworksCollection, getSettingsCollection } from "./mongodb";
 import { revalidatePath } from "next/cache";
 import { ObjectId } from "mongodb";
-import type { Artwork, JudgeScore } from "./types";
+import type { Artwork, JudgeScore, Comment, ScoreCriteria } from "./types";
+import { revalidateTag } from "next/cache";
 
 const classes = ["VII", "VIII", "IX"] as const;
+
+// Helper to revalidate all important paths
+function revalidateAll() {
+    revalidatePath("/", "layout");
+}
 
 const submissionSchema = z.object({
   name: z.string().min(1),
@@ -25,21 +31,41 @@ async function fileToDataUri(file: File): Promise<string> {
   return `data:${file.type};base64,${buffer.toString("base64")}`;
 }
 
+// Helper to convert DB doc to Artwork type
+function docToArtwork(doc: any): Artwork {
+    const { _id, ...rest } = doc;
+    const comments = doc.comments || [];
+    
+    // Build a tree structure for comments
+    const commentsById = new Map(comments.map((c: any) => [c.id.toString(), { ...c, id: c.id.toString(), replies: [] }]));
+    const rootComments: Comment[] = [];
+    
+    comments.forEach((c: any) => {
+        const commentId = c.id.toString();
+        const parentId = c.parentId ? c.parentId.toString() : null;
+
+        if (parentId && commentsById.has(parentId)) {
+            const parentComment = commentsById.get(parentId);
+            parentComment?.replies.push(commentsById.get(commentId)!);
+        } else {
+            rootComments.push(commentsById.get(commentId)!);
+        }
+    });
+
+    return {
+        ...rest,
+        id: _id.toString(),
+        scores: doc.scores || [],
+        totalPoints: doc.totalPoints || 0,
+        comments: rootComments.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    } as Artwork;
+}
+
+
 export async function getArtworks(): Promise<Artwork[]> {
     const collection = await getArtworksCollection();
     const artworksFromDb = await collection.find({}).sort({ createdAt: -1 }).toArray();
-    
-    // Convert ObjectId to string for client-side usage and remove the original _id
-    return artworksFromDb.map(art => {
-        const { _id, ...rest } = art;
-        return {
-            ...rest,
-            id: _id.toString(),
-            scores: art.scores || [], // Ensure scores is an array
-            totalPoints: art.totalPoints || 0, // Ensure totalPoints exists
-            comments: art.comments || [],
-        } as Artwork;
-    });
+    return artworksFromDb.map(docToArtwork);
 }
 
 export async function submitArtwork(formData: FormData) {
@@ -62,7 +88,6 @@ export async function submitArtwork(formData: FormData) {
       return { success: false, message: 'Format file harus PNG atau JPG.' };
   }
 
-  // We only parse the text fields, file is handled separately
   const parsed = submissionSchema.safeParse(rawFormData);
   if (!parsed.success) {
       return { success: false, message: 'Data tidak valid.' };
@@ -79,14 +104,12 @@ export async function submitArtwork(formData: FormData) {
       scores: [],
       totalPoints: 0,
       status_juara: 0,
-      isInGallery: false, // Default to not being in the gallery
+      isInGallery: false,
       comments: [],
       createdAt: new Date(),
     });
 
-    revalidatePath("/");
-    revalidatePath("/admin");
-
+    revalidateAll();
     return { success: true };
   } catch (error) {
     console.error("Gagal menyimpan karya:", error);
@@ -109,9 +132,7 @@ export async function updateArtwork(artworkId: string, formData: FormData) {
             { $set: parsed.data }
         );
 
-        revalidatePath('/admin');
-        revalidatePath('/');
-        revalidatePath('/leaderboard');
+        revalidateAll();
         return { success: true };
     } catch (error) {
         console.error("Gagal memperbarui data:", error);
@@ -120,45 +141,6 @@ export async function updateArtwork(artworkId: string, formData: FormData) {
 }
 
 
-export async function setWinnerStatus(artworkId: string, rank: number) {
-    try {
-        const artworks = await getArtworksCollection();
-
-        // Remove the rank from any current holder of that rank
-        await artworks.updateOne({ status_juara: rank }, { $set: { status_juara: 0 } });
-
-        // Assign the new rank and add to gallery
-        await artworks.updateOne(
-            { _id: new ObjectId(artworkId) },
-            { $set: { status_juara: rank, isInGallery: true } }
-        );
-
-        revalidatePath('/admin');
-        revalidatePath('/leaderboard');
-        revalidatePath('/');
-        return { success: true };
-    } catch (error) {
-        console.error("Gagal mengatur pemenang:", error);
-        return { success: false, message: 'Gagal memperbarui status juara.' };
-    }
-}
-
-export async function removeWinnerStatus(artworkId: string) {
-    try {
-        const artworks = await getArtworksCollection();
-        await artworks.updateOne(
-            { _id: new ObjectId(artworkId) },
-            { $set: { status_juara: 0 } }
-        );
-        revalidatePath('/admin');
-        revalidatePath('/leaderboard');
-        return { success: true };
-    } catch (error) {
-        console.error("Gagal menghapus status pemenang:", error);
-        return { success: false, message: 'Gagal menghapus status juara.' };
-    }
-}
-
 export async function toggleGalleryStatus(artworkId: string, currentStatus: boolean) {
     try {
         const artworks = await getArtworksCollection();
@@ -166,8 +148,7 @@ export async function toggleGalleryStatus(artworkId: string, currentStatus: bool
             { _id: new ObjectId(artworkId) },
             { $set: { isInGallery: !currentStatus } }
         );
-        revalidatePath('/admin');
-        revalidatePath('/');
+        revalidateAll();
         return { success: true };
     } catch (error) {
         console.error("Gagal mengubah status galeri:", error);
@@ -179,8 +160,7 @@ export async function deleteArtwork(artworkId: string) {
     try {
         const artworks = await getArtworksCollection();
         await artworks.deleteOne({ _id: new ObjectId(artworkId) });
-        revalidatePath('/admin');
-        revalidatePath('/');
+        revalidateAll();
         return { success: true };
     } catch (error) {
         console.error("Gagal menghapus karya:", error);
@@ -188,7 +168,19 @@ export async function deleteArtwork(artworkId: string) {
     }
 }
 
-export async function givePoints(artworkId: string, judgeName: string, score: number) {
+const criteriaSchema = z.object({
+  theme_match: z.number().min(1).max(10),
+  layout: z.number().min(1).max(10),
+  typography_color: z.number().min(1).max(10),
+  content_clarity: z.number().min(1).max(10),
+});
+
+export async function givePoints(artworkId: string, judgeName: string, criteria: ScoreCriteria) {
+    const parsedCriteria = criteriaSchema.safeParse(criteria);
+    if (!parsedCriteria.success) {
+        return { success: false, message: 'Data kriteria tidak valid.' };
+    }
+
     try {
         const artworks = await getArtworksCollection();
         const artwork = await artworks.findOne({ _id: new ObjectId(artworkId) });
@@ -199,24 +191,28 @@ export async function givePoints(artworkId: string, judgeName: string, score: nu
 
         const existingScores: JudgeScore[] = artwork.scores || [];
         
-        // Check if the judge has already scored this artwork
         if (existingScores.some(s => s.judgeName === judgeName)) {
             return { success: false, message: `${judgeName} sudah memberikan nilai untuk karya ini.` };
         }
+        
+        const newScore: JudgeScore = {
+            judgeName: judgeName,
+            criteria: parsedCriteria.data,
+            totalScore: Object.values(parsedCriteria.data).reduce((sum, val) => sum + val, 0)
+        }
 
-        // Add the new score
-        const newScores = [...existingScores, { judgeName, score }];
-        const totalPoints = newScores.reduce((acc, curr) => acc + curr.score, 0);
+        const newScores = [...existingScores, newScore];
+        const totalPoints = newScores.reduce((acc, curr) => acc + curr.totalScore, 0);
 
-        await artworks.updateOne(
+        const result = await artworks.findOneAndUpdate(
             { _id: new ObjectId(artworkId) },
-            { $set: { scores: newScores, totalPoints: totalPoints } }
+            { $set: { scores: newScores, totalPoints: totalPoints } },
+            { returnDocument: 'after' }
         );
 
-        revalidatePath('/admin');
-        revalidatePath('/leaderboard');
-
-        return { success: true };
+        revalidateAll();
+        
+        return { success: true, updatedArtwork: docToArtwork(result) };
 
     } catch (error) {
         console.error("Gagal memberikan poin:", error);
@@ -228,7 +224,7 @@ const commentSchema = z.object({
   commentText: z.string().min(1, "Komentar tidak boleh kosong.").max(500, "Komentar maksimal 500 karakter."),
 });
 
-export async function addComment(artworkId: string, formData: FormData) {
+export async function addComment(artworkId: string, formData: FormData, parentId: string | null) {
     const rawFormData = Object.fromEntries(formData.entries());
     const parsed = commentSchema.safeParse(rawFormData);
     
@@ -239,25 +235,25 @@ export async function addComment(artworkId: string, formData: FormData) {
     try {
         const artworks = await getArtworksCollection();
         const newComment = {
-            id: new ObjectId().toString(),
+            id: new ObjectId(),
             text: parsed.data.commentText,
             createdAt: new Date(),
+            parentId: parentId ? new ObjectId(parentId) : null,
         };
 
-        const result = await artworks.updateOne(
+        const result = await artworks.findOneAndUpdate(
             { _id: new ObjectId(artworkId) },
-            { $push: { comments: { $each: [newComment], $sort: { createdAt: -1 } } } }
+            { $push: { comments: newComment } },
+            { returnDocument: 'after' }
         );
 
-        if (result.modifiedCount === 0) {
+        if (!result) {
             return { success: false, message: "Karya tidak ditemukan." };
         }
 
-        revalidatePath('/admin');
-        revalidatePath('/');
-        revalidatePath('/leaderboard');
+        revalidateAll();
 
-        return { success: true, newComment };
+        return { success: true, updatedArtwork: docToArtwork(result) };
 
     } catch (error) {
         console.error("Gagal menambahkan komentar:", error);
@@ -272,11 +268,9 @@ export async function getSubmissionStatus(): Promise<boolean> {
     try {
         const settings = await getSettingsCollection();
         const config = await settings.findOne({ key: "submission" });
-        // If not set, default to open (true)
         return config ? config.isOpen : true;
     } catch (error) {
         console.error("Gagal mengambil status pendaftaran:", error);
-        // Default to true in case of error to be safe
         return true;
     }
 }
@@ -289,8 +283,7 @@ export async function setSubmissionStatus(isOpen: boolean) {
             { $set: { isOpen: isOpen } },
             { upsert: true }
         );
-        revalidatePath('/');
-        revalidatePath('/admin');
+        revalidateAll();
         return { success: true, newState: isOpen };
     } catch (error) {
         console.error("Gagal mengubah status pendaftaran:", error);
@@ -305,7 +298,6 @@ export async function getLeaderboardStatus(): Promise<boolean> {
     try {
         const settings = await getSettingsCollection();
         const config = await settings.findOne({ key: "leaderboard" });
-        // If not set, default to not showing (false)
         return config ? config.showResults : false;
     } catch (error) {
         console.error("Gagal mengambil status leaderboard:", error);
@@ -321,8 +313,7 @@ export async function setLeaderboardStatus(showResults: boolean) {
             { $set: { showResults } },
             { upsert: true }
         );
-        revalidatePath('/leaderboard');
-        revalidatePath('/admin');
+        revalidateAll();
         return { success: true, newState: showResults };
     } catch (error) {
         console.error("Gagal mengubah status leaderboard:", error);

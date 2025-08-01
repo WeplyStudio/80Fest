@@ -30,7 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Eye, MoreHorizontal, Trash, Award, GalleryVertical, GalleryVerticalEnd, Pencil, Star, Users, Layers, StarHalf } from "lucide-react";
+import { Eye, MoreHorizontal, Trash, GalleryVertical, GalleryVerticalEnd, Pencil, Star, Users, Layers } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -43,10 +43,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { deleteArtwork, toggleGalleryStatus, setSubmissionStatus, getLeaderboardStatus, setLeaderboardStatus } from "@/lib/actions";
+import { deleteArtwork, toggleGalleryStatus, setSubmissionStatus, setLeaderboardStatus } from "@/lib/actions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Switch } from "./ui/switch";
-import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { EditArtworkDialog } from "./edit-artwork-dialog";
 import { GivePointsDialog } from "./give-points-dialog";
@@ -331,7 +330,7 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLe
                             </DialogDescription>
                           </DialogHeader>
                           <div className="grid md:grid-cols-2 gap-6 items-start">
-                              <div className="aspect-[2480/3508] w-full relative rounded-md overflow-hidden bg-muted">
+                              <div className="aspect-[3/4] w-full relative rounded-md overflow-hidden bg-muted">
                                   <Image
                                       src={artwork.imageUrl}
                                       alt={artwork.title}
@@ -340,12 +339,16 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLe
                                       data-ai-hint={artwork.imageHint}
                                   />
                               </div>
-                              <div>
-                                  <h3 className="font-semibold font-headline mb-2">Deskripsi Karya</h3>
-                                  <p className="text-muted-foreground mb-4">{artwork.description}</p>
-                                  <h3 className="font-semibold font-headline mb-2">Rincian Poin</h3>
-                                  <ScoreTable scores={artwork.scores || []} totalPoints={artwork.totalPoints || 0} />
-                                  <CommentSection artwork={artwork} />
+                              <div className="flex flex-col gap-4">
+                                  <div>
+                                    <h3 className="font-semibold font-headline mb-2">Deskripsi Karya</h3>
+                                    <p className="text-muted-foreground mb-4 text-sm">{artwork.description}</p>
+                                  </div>
+                                  <div>
+                                    <h3 className="font-semibold font-headline mb-2">Rincian Poin</h3>
+                                    <ScoreTable scores={artwork.scores || []} totalPoints={artwork.totalPoints || 0} />
+                                  </div>
+                                  <CommentSection artwork={artwork} onArtworkUpdate={handleUpdateArtworkState}/>
                               </div>
                           </div>
                         </DialogContent>
@@ -391,21 +394,30 @@ function ScoreTable({ scores, totalPoints }: { scores: JudgeScore[], totalPoints
                 <TableHeader>
                     <TableRow>
                         <TableHead>Juri</TableHead>
+                        <TableHead>Kriteria</TableHead>
                         <TableHead className="text-right">Poin</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {scores.map(score => (
-                        <TableRow key={score.judgeName}>
-                            <TableCell>{score.judgeName}</TableCell>
-                            <TableCell className="text-right">{score.score}</TableCell>
-                        </TableRow>
+                    {scores.map((score, scoreIndex) => (
+                        <React.Fragment key={`${score.judgeName}-${scoreIndex}`}>
+                            <TableRow>
+                                <TableCell rowSpan={5} className="font-medium align-top pt-4">{score.judgeName}</TableCell>
+                                <TableCell>Kesesuaian Tema</TableCell>
+                                <TableCell className="text-right">{score.criteria.theme_match}</TableCell>
+                            </TableRow>
+                            <TableRow><TableCell>Tata Letak</TableCell><TableCell className="text-right">{score.criteria.layout}</TableCell></TableRow>
+                            <TableRow><TableCell>Tipografi & Warna</TableCell><TableCell className="text-right">{score.criteria.typography_color}</TableCell></TableRow>
+                            <TableRow><TableCell>Kejelasan Isi</TableCell><TableCell className="text-right">{score.criteria.content_clarity}</TableCell></TableRow>
+                            <TableRow className="bg-muted/30">
+                                <TableCell className="font-semibold">Subtotal Juri</TableCell>
+                                <TableCell className="text-right font-semibold">{score.totalScore}</TableCell>
+                            </TableRow>
+                        </React.Fragment>
                     ))}
-                     <TableRow>
-                        <TableCell colSpan={2} className="p-0"><div className="h-px bg-border w-full"></div></TableCell>
-                    </TableRow>
-                    <TableRow className="bg-muted/50 font-bold">
-                        <TableCell>Total</TableCell>
+                    {scores.length > 0 && <TableRow><TableCell colSpan={3} className="p-0"><div className="h-px bg-border w-full"></div></TableCell></TableRow>}
+                    <TableRow className="bg-muted/50 font-bold text-base">
+                        <TableCell colSpan={2}>Total Akhir</TableCell>
                         <TableCell className="text-right">{totalPoints}</TableCell>
                     </TableRow>
                 </TableBody>

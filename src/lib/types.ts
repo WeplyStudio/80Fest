@@ -1,13 +1,23 @@
 
+export type ScoreCriteria = {
+  theme_match: number;       // Kesesuaian dengan tema
+  layout: number;            // Tata letak
+  typography_color: number;  // Tipografi dan warna
+  content_clarity: number;   // Kejelasan isi/konten
+};
+
 export type JudgeScore = {
   judgeName: string;
-  score: number;
+  criteria: ScoreCriteria;
+  totalScore: number;
 };
 
 export type Comment = {
   id: string;
   text: string;
   createdAt: Date;
+  parentId: string | null;
+  replies: Comment[];
 }
 
 export type Artwork = {

@@ -1,6 +1,7 @@
 
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -12,7 +13,16 @@ interface GalleryProps {
   artworks: Artwork[];
 }
 
-export function Gallery({ artworks }: GalleryProps) {
+export function Gallery({ artworks: initialArtworks }: GalleryProps) {
+  const [artworks, setArtworks] = useState(initialArtworks);
+
+  const handleArtworkUpdate = (updatedArtwork: Artwork) => {
+      setArtworks(currentArtworks => 
+          currentArtworks.map(art => art.id === updatedArtwork.id ? updatedArtwork : art)
+      );
+  };
+  
+  const findArtworkById = (id: string) => artworks.find(art => art.id === id);
 
   return (
     <section id="gallery" className="space-y-12 section-padding">
@@ -30,53 +40,59 @@ export function Gallery({ artworks }: GalleryProps) {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {artworks.map((artwork) => (
-            <Dialog key={artwork.id}>
-                <Card className="overflow-hidden flex flex-col group transition-all hover:shadow-xl hover:-translate-y-1 bg-card/80 backdrop-blur-sm">
-                    <DialogTrigger asChild>
-                        <div className="p-0 cursor-pointer">
-                            <div className="aspect-[3/4] relative">
-                                <Image
-                                src={artwork.imageUrl}
-                                alt={artwork.title}
-                                fill
-                                className="object-cover transition-transform group-hover:scale-105"
-                                data-ai-hint={artwork.imageHint}
-                                />
+            {artworks.map((artwork) => {
+              const currentArtwork = findArtworkById(artwork.id) || artwork;
+              return (
+                <Dialog key={artwork.id}>
+                    <Card className="overflow-hidden flex flex-col group transition-all hover:shadow-xl hover:-translate-y-1 bg-card/80 backdrop-blur-sm">
+                        <DialogTrigger asChild>
+                            <div className="p-0 cursor-pointer">
+                                <div className="aspect-[3/4] relative">
+                                    <Image
+                                    src={artwork.imageUrl}
+                                    alt={artwork.title}
+                                    fill
+                                    className="object-cover transition-transform group-hover:scale-105"
+                                    data-ai-hint={artwork.imageHint}
+                                    />
+                                </div>
                             </div>
+                        </DialogTrigger>
+                        <CardContent className="p-4 flex-grow">
+                            <CardTitle className="font-headline text-lg truncate group-hover:text-primary">{artwork.title}</CardTitle>
+                            <p className="text-sm text-muted-foreground">{artwork.name} - {artwork.class}</p>
+                        </CardContent>
+                    </Card>
+                    <DialogContent className="max-w-4xl w-full max-h-[90svh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle className="font-headline text-2xl">{currentArtwork.title}</DialogTitle>
+                        <DialogDescription>{currentArtwork.name} - {currentArtwork.class}</DialogDescription>
+                    </DialogHeader>
+                    <div className="grid md:grid-cols-2 gap-6 items-start">
+                        <div className="aspect-[3/4] w-full relative rounded-md overflow-hidden bg-muted">
+                            <Image
+                                src={currentArtwork.imageUrl}
+                                alt={currentArtwork.title}
+                                fill
+                                className="object-contain"
+                                data-ai-hint={currentArtwork.imageHint}
+                            />
                         </div>
-                    </DialogTrigger>
-                    <CardContent className="p-4 flex-grow">
-                        <CardTitle className="font-headline text-lg truncate group-hover:text-primary">{artwork.title}</CardTitle>
-                        <p className="text-sm text-muted-foreground">{artwork.name} - {artwork.class}</p>
-                    </CardContent>
-                </Card>
-                <DialogContent className="max-w-4xl w-full max-h-[90svh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle className="font-headline text-2xl">{artwork.title}</DialogTitle>
-                    <DialogDescription>{artwork.name} - {artwork.class}</DialogDescription>
-                </DialogHeader>
-                <div className="grid md:grid-cols-2 gap-6 items-start">
-                    <div className="aspect-[2480/3508] w-full relative rounded-md overflow-hidden bg-muted">
-                        <Image
-                            src={artwork.imageUrl}
-                            alt={artwork.title}
-                            fill
-                            className="object-contain"
-                            data-ai-hint={artwork.imageHint}
-                        />
+                        <div className="flex flex-col gap-4">
+                            <div>
+                                <h3 className="font-semibold font-headline mb-2">Deskripsi Karya</h3>
+                                <p className="text-muted-foreground text-sm">{currentArtwork.description}</p>
+                            </div>
+                            <CommentSection artwork={currentArtwork} onArtworkUpdate={handleArtworkUpdate} />
+                        </div>
                     </div>
-                    <div>
-                        <h3 className="font-semibold font-headline mb-2">Deskripsi Karya</h3>
-                        <p className="text-muted-foreground">{artwork.description}</p>
-                        <CommentSection artwork={artwork} />
-                    </div>
-                </div>
-                </DialogContent>
-            </Dialog>
-            ))}
+                    </DialogContent>
+                </Dialog>
+              )
+            })}
         </div>
       )}
     </section>
   );
 }
+
