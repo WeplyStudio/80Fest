@@ -33,31 +33,62 @@ async function fileToDataUri(file: File): Promise<string> {
 
 // Helper to convert DB doc to Artwork type
 function docToArtwork(doc: any): Artwork {
+    if (!doc) return doc;
     const { _id, ...rest } = doc;
-    const comments = doc.comments || [];
+    const allComments: any[] = doc.comments || [];
     
-    // Build a tree structure for comments
-    const commentsById = new Map(comments.map((c: any) => [c.id.toString(), { ...c, id: c.id.toString(), replies: [] }]));
-    const rootComments: Comment[] = [];
-    
-    comments.forEach((c: any) => {
-        const commentId = c.id.toString();
-        const parentId = c.parentId ? c.parentId.toString() : null;
+    // Map to hold comments and their nested replies
+    const commentsById = new Map<string, Comment>();
+    allComments.forEach(c => {
+        commentsById.set(c.id.toString(), {
+            ...c,
+            id: c.id.toString(),
+            replies: [],
+        });
+    });
 
-        if (parentId && commentsById.has(parentId)) {
-            const parentComment = commentsById.get(parentId);
-            parentComment?.replies.push(commentsById.get(commentId)!);
+    const rootComments: Comment[] = [];
+    commentsById.forEach(comment => {
+        if (comment.parentId) {
+            const parentIdStr = comment.parentId.toString();
+            if (commentsById.has(parentIdStr)) {
+                const parent = commentsById.get(parentIdStr);
+                parent?.replies.push(comment);
+            }
         } else {
-            rootComments.push(commentsById.get(commentId)!);
+            rootComments.push(comment);
         }
     });
+
+    // Recursively sort replies by date
+    const sortReplies = (comments: Comment[]) => {
+        comments.sort((a,b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        comments.forEach(c => {
+            if (c.replies.length > 0) {
+                sortReplies(c.replies);
+            }
+        })
+    };
+    sortReplies(rootComments);
+    
+    // Flatten the tree back to a simple array for the frontend, but keep parentIds
+    const flatCommentsWithParentId: Comment[] = [];
+    allComments.forEach(c => {
+        flatCommentsWithParentId.push({
+            ...c,
+            id: c.id.toString(),
+            parentId: c.parentId ? c.parentId.toString() : null,
+            replies: [] // Reset replies, as frontend will build the tree
+        });
+    });
+
 
     return {
         ...rest,
         id: _id.toString(),
         scores: doc.scores || [],
         totalPoints: doc.totalPoints || 0,
-        comments: rootComments.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+        comments: flatCommentsWithParentId,
     } as Artwork;
 }
 
