@@ -21,7 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Send, ArrowLeft, Eye } from "lucide-react";
 import { submitArtwork, getSubmissionStatus } from "@/lib/actions";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
@@ -110,7 +110,7 @@ export default function SubmitPage() {
         title: "Karya Berhasil Diupload!",
         description: "Terima kasih atas partisipasimu. Karyamu akan segera ditinjau oleh admin.",
       });
-      router.push("/");
+      router.push("/submit/thank-you");
     } else {
       toast({
         variant: "destructive",
@@ -306,11 +306,7 @@ export default function SubmitPage() {
                         </div>
                     </div>
                 </div>
-                <div className="flex flex-col-reverse sm:flex-row sm:justify-between items-center gap-4">
-                    <Button variant="outline" onClick={handleBackToForm} disabled={step === 'submitting'} className="w-full sm:w-auto">
-                        <ArrowLeft className="mr-2" />
-                        Kembali & Edit
-                    </Button>
+                <div className="flex flex-col sm:flex-row-reverse justify-between items-center gap-4">
                     <Button onClick={onFinalSubmit} disabled={step === 'submitting'} className="bg-accent text-accent-foreground hover:bg-accent/90 w-full sm:w-auto">
                         {step === 'submitting' ? (
                             <>
@@ -323,6 +319,10 @@ export default function SubmitPage() {
                                 Konfirmasi & Kirim Karyaku
                             </>
                         )}
+                    </Button>
+                    <Button variant="outline" onClick={handleBackToForm} disabled={step === 'submitting'} className="w-full sm:w-auto">
+                        <ArrowLeft className="mr-2" />
+                        Kembali & Edit
                     </Button>
                 </div>
             </CardContent>
