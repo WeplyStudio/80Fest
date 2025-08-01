@@ -37,6 +37,7 @@ export async function getArtworks(): Promise<Artwork[]> {
             id: _id.toString(),
             scores: art.scores || [], // Ensure scores is an array
             totalPoints: art.totalPoints || 0, // Ensure totalPoints exists
+            comments: art.comments || [],
         } as Artwork;
     });
 }
@@ -79,6 +80,7 @@ export async function submitArtwork(formData: FormData) {
       totalPoints: 0,
       status_juara: 0,
       isInGallery: false, // Default to not being in the gallery
+      comments: [],
       createdAt: new Date(),
     });
 
@@ -218,6 +220,47 @@ export async function givePoints(artworkId: string, judgeName: string, score: nu
 
     } catch (error) {
         console.error("Gagal memberikan poin:", error);
+        return { success: false, message: "Terjadi kesalahan pada server." };
+    }
+}
+
+const commentSchema = z.object({
+  commentText: z.string().min(1, "Komentar tidak boleh kosong.").max(500, "Komentar maksimal 500 karakter."),
+});
+
+export async function addComment(artworkId: string, formData: FormData) {
+    const rawFormData = Object.fromEntries(formData.entries());
+    const parsed = commentSchema.safeParse(rawFormData);
+    
+    if (!parsed.success) {
+        return { success: false, message: parsed.error.errors[0].message };
+    }
+
+    try {
+        const artworks = await getArtworksCollection();
+        const newComment = {
+            id: new ObjectId().toString(),
+            text: parsed.data.commentText,
+            createdAt: new Date(),
+        };
+
+        const result = await artworks.updateOne(
+            { _id: new ObjectId(artworkId) },
+            { $push: { comments: { $each: [newComment], $sort: { createdAt: -1 } } } }
+        );
+
+        if (result.modifiedCount === 0) {
+            return { success: false, message: "Karya tidak ditemukan." };
+        }
+
+        revalidatePath('/admin');
+        revalidatePath('/');
+        revalidatePath('/leaderboard');
+
+        return { success: true, newComment };
+
+    } catch (error) {
+        console.error("Gagal menambahkan komentar:", error);
         return { success: false, message: "Terjadi kesalahan pada server." };
     }
 }

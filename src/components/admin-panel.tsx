@@ -50,6 +50,7 @@ import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { EditArtworkDialog } from "./edit-artwork-dialog";
 import { GivePointsDialog } from "./give-points-dialog";
+import { CommentSection } from "./comment-section";
 
 
 interface AdminPanelProps {
@@ -322,7 +323,7 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLe
                         </DropdownMenu>
 
                         {/* Dialog for View Details */}
-                        <DialogContent className="max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                        <DialogContent className="max-w-4xl w-full max-h-[90svh] overflow-y-auto">
                           <DialogHeader>
                             <DialogTitle className="font-headline text-2xl">{artwork.title}</DialogTitle>
                             <DialogDescription>
@@ -344,6 +345,7 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLe
                                   <p className="text-muted-foreground mb-4">{artwork.description}</p>
                                   <h3 className="font-semibold font-headline mb-2">Rincian Poin</h3>
                                   <ScoreTable scores={artwork.scores || []} totalPoints={artwork.totalPoints || 0} />
+                                  <CommentSection artwork={artwork} />
                               </div>
                           </div>
                         </DialogContent>
@@ -411,5 +413,3 @@ function ScoreTable({ scores, totalPoints }: { scores: JudgeScore[], totalPoints
         </div>
     )
 }
-
-    

@@ -15,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { CommentSection } from './comment-section';
 
 interface LeaderboardProps {
   rankedArtworks: Artwork[];
@@ -109,7 +110,7 @@ function WinnerCard({ artwork, rank }: { artwork: Artwork, rank: number }) {
             </CardContent>
         </div>
       </Card>
-      <DialogContent className="max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl w-full max-h-[90svh] overflow-y-auto">
           <DialogHeader>
               <DialogTitle className="font-headline text-2xl">{artwork.title}</DialogTitle>
               <DialogDescription>{artwork.name} - {artwork.class}</DialogDescription>
@@ -128,7 +129,8 @@ function WinnerCard({ artwork, rank }: { artwork: Artwork, rank: number }) {
                   <h3 className="font-semibold font-headline mb-2">Deskripsi Karya</h3>
                   <p className="text-muted-foreground mb-4">{artwork.description}</p>
                   <h3 className="font-semibold font-headline mb-2">Rincian Poin</h3>
-                  <ScoreTable scores={artwork.scores} totalPoints={artwork.totalPoints} />
+                  <ScoreTable scores={artwork.scores || []} totalPoints={artwork.totalPoints || 0} />
+                  <CommentSection artwork={artwork} />
               </div>
           </div>
       </DialogContent>

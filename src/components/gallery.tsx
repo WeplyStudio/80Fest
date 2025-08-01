@@ -6,6 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import type { Artwork } from "@/lib/types";
 import { Camera } from "lucide-react";
+import { CommentSection } from "./comment-section";
 
 interface GalleryProps {
   artworks: Artwork[];
@@ -50,7 +51,7 @@ export function Gallery({ artworks }: GalleryProps) {
                         <p className="text-sm text-muted-foreground">{artwork.name} - {artwork.class}</p>
                     </CardContent>
                 </Card>
-                <DialogContent className="max-w-4xl w-full">
+                <DialogContent className="max-w-4xl w-full max-h-[90svh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="font-headline text-2xl">{artwork.title}</DialogTitle>
                     <DialogDescription>{artwork.name} - {artwork.class}</DialogDescription>
@@ -68,6 +69,7 @@ export function Gallery({ artworks }: GalleryProps) {
                     <div>
                         <h3 className="font-semibold font-headline mb-2">Deskripsi Karya</h3>
                         <p className="text-muted-foreground">{artwork.description}</p>
+                        <CommentSection artwork={artwork} />
                     </div>
                 </div>
                 </DialogContent>
