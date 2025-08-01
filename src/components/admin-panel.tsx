@@ -30,7 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Eye, MoreHorizontal, Trash, Award, GalleryVertical, GalleryVerticalEnd, Pencil, Star } from "lucide-react";
+import { Eye, MoreHorizontal, Trash, Award, GalleryVertical, GalleryVerticalEnd, Pencil, Star, Users, Layers, StarHalf } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -64,6 +64,27 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLe
   const [leaderboardVisible, setLeaderboardVisible] = useState(initialLeaderboardStatus);
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
+
+  const stats = useMemo(() => {
+    const totalArtworks = artworks.length;
+    const totalParticipants = totalArtworks;
+
+    const scoredArtworks = artworks.filter(art => art.totalPoints > 0);
+    const totalPointsSum = scoredArtworks.reduce((sum, art) => sum + art.totalPoints, 0);
+    const averageScore = scoredArtworks.length > 0 ? (totalPointsSum / scoredArtworks.length) : 0;
+
+    const artworksByClass = artworks.reduce((acc, art) => {
+        acc[art.class] = (acc[art.class] || 0) + 1;
+        return acc;
+    }, {} as Record<string, number>);
+
+    return {
+        totalArtworks,
+        totalParticipants,
+        averageScore: averageScore.toFixed(2),
+        artworksByClass: Object.entries(artworksByClass).sort(([, a], [, b]) => b - a)
+    };
+  }, [artworks]);
 
   const filteredArtworks = useMemo(() => {
     return artworks.filter(artwork => 
@@ -145,6 +166,61 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLe
           Kelola semua karya yang telah di-upload oleh peserta dan atur pendaftaran.
         </p>
       </div>
+      
+      <section>
+        <h2 className="text-2xl font-bold font-headline mb-4">Analitik Lomba</h2>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Karya Masuk</CardTitle>
+                    <Layers className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{stats.totalArtworks}</div>
+                    <p className="text-xs text-muted-foreground">Karya telah diunggah</p>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Peserta</CardTitle>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{stats.totalParticipants}</div>
+                    <p className="text-xs text-muted-foreground">Orang telah berpartisipasi</p>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Rata-rata Poin</CardTitle>
+                    <StarHalf className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{stats.averageScore}</div>
+                     <p className="text-xs text-muted-foreground">Dari karya yang sudah dinilai</p>
+                </CardContent>
+            </Card>
+            <Card>
+                 <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Karya per Kelas</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-muted-foreground">
+                    {stats.artworksByClass.length > 0 ? (
+                        <ul className="space-y-1">
+                        {stats.artworksByClass.map(([className, count]) => (
+                            <li key={className} className="flex justify-between">
+                                <span className="font-medium text-foreground">Kelas {className}</span>
+                                <span>{count} karya</span>
+                            </li>
+                        ))}
+                        </ul>
+                    ) : (
+                        <p>Belum ada karya.</p>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
+      </section>
 
       <Card>
         <CardHeader>
@@ -348,3 +424,5 @@ function ScoreTable({ scores, totalPoints }: { scores: JudgeScore[], totalPoints
         </div>
     )
 }
+
+    
