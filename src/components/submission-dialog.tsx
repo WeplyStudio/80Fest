@@ -28,10 +28,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { submitArtwork } from "@/lib/actions";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+
+const classes = ["VII", "VIII", "IX"] as const;
 
 const submissionSchema = z.object({
   name: z.string().min(3, "Nama harus diisi, minimal 3 karakter."),
-  class: z.string().min(2, "Kelas harus diisi."),
+  class: z.enum(classes, { required_error: "Kelas harus dipilih." }),
   title: z.string().min(5, "Judul karya harus diisi, minimal 5 karakter."),
   description: z.string().min(10, "Deskripsi harus diisi, minimal 10 karakter.").max(300, "Deskripsi maksimal 300 karakter."),
   artworkFile: z
@@ -55,7 +58,7 @@ export function SubmissionDialog({ children }: { children: ReactNode }) {
     resolver: zodResolver(submissionSchema),
     defaultValues: {
       name: "",
-      class: "",
+      class: undefined,
       title: "",
       description: "",
       artworkFile: undefined,
@@ -126,9 +129,16 @@ export function SubmissionDialog({ children }: { children: ReactNode }) {
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel>Kelas</FormLabel>
-                    <FormControl>
-                        <Input placeholder="VII" {...field} />
-                    </FormControl>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Pilih kelas" />
+                            </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            {classes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
                     <FormMessage />
                     </FormItem>
                 )}

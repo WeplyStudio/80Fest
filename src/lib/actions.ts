@@ -7,9 +7,11 @@ import { revalidatePath } from "next/cache";
 import { ObjectId } from "mongodb";
 import type { Artwork, JudgeScore } from "./types";
 
+const classes = ["VII", "VIII", "IX"] as const;
+
 const submissionSchema = z.object({
   name: z.string().min(1),
-  class: z.string().min(1),
+  class: z.enum(classes),
   title: z.string().min(1),
   description: z.string().min(1),
   // artworkFile is not part of the base schema as it's handled separately
