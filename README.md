@@ -1,5 +1,5 @@
-# Firebase Studio
+# Proyek Lomba Desain Poster
 
-This is a NextJS starter in Firebase Studio.
+Ini adalah proyek Next.js untuk platform lomba desain poster.
 
-To get started, take a look at src/app/page.tsx.
+Untuk memulai, lihat `src/app/page.tsx`.

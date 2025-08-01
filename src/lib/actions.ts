@@ -131,7 +131,6 @@ export async function submitArtwork(formData: FormData) {
     await artworks.insertOne({
       ...parsed.data,
       imageUrl: imageUrl,
-      imageHint: "poster design",
       scores: [],
       totalPoints: 0,
       status_juara: 0,

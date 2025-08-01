@@ -120,7 +120,6 @@ function WinnerCard({ artwork, rank, onArtworkUpdate, findArtworkById }: WinnerC
                           alt={currentArtwork.title}
                           fill
                           className="object-cover transition-transform group-hover:scale-105"
-                          data-ai-hint={currentArtwork.imageHint}
                       />
                       <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <p className="text-white font-semibold">Lihat Detail</p>
@@ -130,7 +129,7 @@ function WinnerCard({ artwork, rank, onArtworkUpdate, findArtworkById }: WinnerC
             </CardContent>
         </div>
       </Card>
-      <DialogContent className="max-w-4xl w-full max-h-[90svh] overflow-y-auto">
+      <DialogContent className="max-w-4xl w-full">
           <DialogHeader>
               <DialogTitle className="font-headline text-2xl">{currentArtwork.title}</DialogTitle>
               <DialogDescription>{currentArtwork.name} - {currentArtwork.class}</DialogDescription>
@@ -142,7 +141,6 @@ function WinnerCard({ artwork, rank, onArtworkUpdate, findArtworkById }: WinnerC
                       alt={currentArtwork.title}
                       fill
                       className="object-contain"
-                      data-ai-hint={currentArtwork.imageHint}
                   />
               </div>
               <div className="flex flex-col gap-4">

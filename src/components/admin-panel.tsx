@@ -50,6 +50,7 @@ import { Input } from "./ui/input";
 import { EditArtworkDialog } from "./edit-artwork-dialog";
 import { GivePointsDialog } from "./give-points-dialog";
 import { CommentSection } from "./comment-section";
+import React from "react";
 
 
 interface AdminPanelProps {
@@ -322,7 +323,7 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLe
                         </DropdownMenu>
 
                         {/* Dialog for View Details */}
-                        <DialogContent className="max-w-4xl w-full max-h-[90svh] overflow-y-auto">
+                        <DialogContent className="max-w-4xl w-full">
                           <DialogHeader>
                             <DialogTitle className="font-headline text-2xl">{artwork.title}</DialogTitle>
                             <DialogDescription>
@@ -336,7 +337,6 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLe
                                       alt={artwork.title}
                                       fill
                                       className="object-contain"
-                                      data-ai-hint={artwork.imageHint}
                                   />
                               </div>
                               <div className="flex flex-col gap-4">
