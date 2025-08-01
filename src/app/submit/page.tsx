@@ -306,12 +306,12 @@ export default function SubmitPage() {
                         </div>
                     </div>
                 </div>
-                <div className="flex justify-between items-center">
-                    <Button variant="outline" onClick={handleBackToForm} disabled={step === 'submitting'}>
+                <div className="flex flex-col-reverse sm:flex-row sm:justify-between items-center gap-4">
+                    <Button variant="outline" onClick={handleBackToForm} disabled={step === 'submitting'} className="w-full sm:w-auto">
                         <ArrowLeft className="mr-2" />
                         Kembali & Edit
                     </Button>
-                    <Button onClick={onFinalSubmit} disabled={step === 'submitting'} className="bg-accent text-accent-foreground hover:bg-accent/90">
+                    <Button onClick={onFinalSubmit} disabled={step === 'submitting'} className="bg-accent text-accent-foreground hover:bg-accent/90 w-full sm:w-auto">
                         {step === 'submitting' ? (
                             <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
