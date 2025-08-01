@@ -112,8 +112,9 @@ export async function submitArtwork(formData: FormData) {
   if (!file || file.size === 0) {
       return { success: false, message: 'File poster tidak valid atau kosong.' };
   }
-  if (file.size > 25 * 1024 * 1024) {
-      return { success: false, message: 'Ukuran file maksimal 25MB.' };
+  // The client side will handle compression, but we add a server-side check as a fallback.
+  if (file.size > 10 * 1024 * 1024) {
+      return { success: false, message: 'Ukuran file maksimal 10MB.' };
   }
   if (!['image/png', 'image/jpeg'].includes(file.type)) {
       return { success: false, message: 'Format file harus PNG atau JPG.' };

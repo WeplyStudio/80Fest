@@ -18,15 +18,18 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Send, ArrowLeft, Eye } from "lucide-react";
+import { Loader2, Send, ArrowLeft, Eye, Image as ImageIcon } from "lucide-react";
 import { submitArtwork, getSubmissionStatus } from "@/lib/actions";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
+import imageCompression from 'browser-image-compression';
 
 const classes = ["VII", "VIII", "IX"] as const;
+const MAX_FILE_SIZE_MB = 10;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 const submissionSchema = z.object({
   name: z.string().min(3, "Nama harus diisi, minimal 3 karakter."),
@@ -36,7 +39,6 @@ const submissionSchema = z.object({
   artworkFile: z
     .custom<FileList>()
     .refine((files) => files?.length === 1, "File poster harus diupload.")
-    .refine((files) => files?.[0]?.size <= 25 * 1024 * 1024, `Ukuran file maksimal 25MB.`)
     .refine(
       (files) => ["image/png", "image/jpeg"].includes(files?.[0]?.type),
       "Format file harus PNG atau JPG."
@@ -94,14 +96,50 @@ export default function SubmitPage() {
     setStep("submitting");
     const data = form.getValues();
     const formData = new FormData();
+
+    let finalFile = data.artworkFile?.[0];
+
+    if (!finalFile) {
+      toast({
+        variant: "destructive",
+        title: "File Tidak Ditemukan",
+        description: "Silakan pilih file karya untuk diunggah.",
+      });
+      setStep("form");
+      return;
+    }
+
+    // Compress image if it's larger than MAX_FILE_SIZE_MB
+    if (finalFile.size > MAX_FILE_SIZE_BYTES) {
+        toast({
+            title: 'Ukuran file besar terdeteksi',
+            description: `File Anda sedang dikompres menjadi di bawah ${MAX_FILE_SIZE_MB}MB. Mohon tunggu...`
+        });
+        try {
+            const options = {
+                maxSizeMB: MAX_FILE_SIZE_MB,
+                maxWidthOrHeight: 1920,
+                useWebWorker: true,
+            };
+            const compressedFile = await imageCompression(finalFile, options);
+            finalFile = new File([compressedFile], finalFile.name, { type: finalFile.type });
+        } catch (error) {
+            console.error("Image compression error: ", error);
+            toast({
+                variant: "destructive",
+                title: "Gagal Kompres Gambar",
+                description: "Terjadi kesalahan saat mengompres gambar. Silakan coba unggah file yang lebih kecil.",
+            });
+            setStep("preview");
+            return;
+        }
+    }
     
     formData.append('name', data.name);
     formData.append('class', data.class);
     formData.append('title', data.title);
     formData.append('description', data.description);
-    if (data.artworkFile && data.artworkFile.length > 0) {
-      formData.append('artworkFile', data.artworkFile[0]);
-    }
+    formData.append('artworkFile', finalFile, finalFile.name);
 
     const result = await submitArtwork(formData);
 
@@ -245,7 +283,7 @@ export default function SubmitPage() {
                 name="artworkFile"
                 render={({ field: { onChange, value, ...rest } }) => (
                     <FormItem>
-                    <FormLabel>File Poster (PNG/JPG, maks 25MB)</FormLabel>
+                    <FormLabel>File Poster (PNG/JPG, maks {MAX_FILE_SIZE_MB}MB)</FormLabel>
                     <FormControl>
                         <Input
                         type="file"
@@ -306,7 +344,7 @@ export default function SubmitPage() {
                         </div>
                     </div>
                 </div>
-                <div className="flex flex-col sm:flex-row-reverse justify-between items-center gap-4">
+                <div className="flex flex-col-reverse sm:flex-col gap-4 sm:flex-row-reverse sm:justify-between items-center">
                     <Button onClick={onFinalSubmit} disabled={step === 'submitting'} className="bg-accent text-accent-foreground hover:bg-accent/90 w-full sm:w-auto">
                         {step === 'submitting' ? (
                             <>
