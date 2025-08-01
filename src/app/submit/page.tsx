@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -67,12 +67,12 @@ export default function SubmitPage() {
     mode: "onChange"
   });
 
-  useState(() => {
+  useEffect(() => {
       getSubmissionStatus().then(status => {
           setSubmissionStatus(status);
           if (!status) setStep("closed");
       })
-  });
+  }, []);
 
   const handlePreview = (data: SubmissionFormValues) => {
     if (data.artworkFile && data.artworkFile[0]) {
@@ -331,4 +331,3 @@ export default function SubmitPage() {
     </div>
   );
 }
-
