@@ -39,7 +39,7 @@ export function Gallery({ artworks: initialArtworks }: GalleryProps) {
         <p className="text-muted-foreground mt-3 max-w-2xl mx-auto">Jelajahi karya-karya luar biasa dari para peserta berbakat kami. Klik pada karya mana pun untuk melihat detailnya.</p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-          {initialArtworks.map((artwork) => (
+          {initialArtworks.filter(art => !art.isDisqualified).map((artwork) => (
             <Link key={artwork.id} href={`/karya/${artwork.id}`} className="block">
               <Card className="overflow-hidden flex flex-col group transition-all duration-300 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2 bg-card border-border/50 h-full">
                   <div className="p-0 cursor-pointer">
@@ -66,5 +66,3 @@ export function Gallery({ artworks: initialArtworks }: GalleryProps) {
     </section>
   );
 }
-
-    

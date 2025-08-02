@@ -26,13 +26,17 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Eye, MoreHorizontal, Star, MessageCircle, CheckCircle, LogOut } from "lucide-react";
+import { Eye, MoreHorizontal, Star, MessageCircle, CheckCircle, LogOut, ShieldX } from "lucide-react";
 import { Input } from "./ui/input";
 import { GivePointsDialog } from "./give-points-dialog";
 import React from "react";
 import { Badge } from "./ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { Textarea } from "./ui/textarea";
+import { disqualifyArtwork } from "@/lib/actions";
 
 interface JudgePanelProps {
     initialArtworks: Artwork[];
@@ -43,6 +47,7 @@ interface JudgePanelProps {
 export function JudgePanel({ initialArtworks, judgeName, onLogout }: JudgePanelProps) {
   const [artworks, setArtworks] = useState<Artwork[]>(initialArtworks);
   const [searchTerm, setSearchTerm] = useState("");
+  const { toast } = useToast();
 
   const filteredArtworks = useMemo(() => {
     return artworks.filter(artwork => 
@@ -56,9 +61,23 @@ export function JudgePanel({ initialArtworks, judgeName, onLogout }: JudgePanelP
     setArtworks(currentArtworks => 
         currentArtworks.map(art => art.id === updatedArtwork.id ? updatedArtwork : art)
     );
-  }
+  };
+
+  const handleDisqualify = async (artworkId: string, reason: string) => {
+      const result = await disqualifyArtwork(artworkId, reason, true);
+      if (result.success) {
+        setArtworks(prev => prev.map(art => art.id === artworkId ? { ...art, isDisqualified: true, disqualificationReason: reason, totalPoints: 0, scores: [] } : art));
+        toast({ title: 'Karya Dilaporkan untuk Diskualifikasi', description: `Laporan Anda telah dikirim ke admin.` });
+      } else {
+        toast({ variant: 'destructive', title: 'Gagal', description: result.message });
+      }
+  };
+
 
   const getJudgedByYouBadge = (artwork: Artwork) => {
+    if (artwork.isDisqualified) {
+        return <Badge variant="destructive" className="bg-red-900/50 text-red-300 border-red-500/30">Didiskualifikasi</Badge>
+    }
     const hasJudged = artwork.scores.some(s => s.judgeName === judgeName);
     if (hasJudged) {
       return <Badge variant="secondary" className="bg-green-500/10 text-green-400 border-green-500/20"><CheckCircle className="w-3 h-3 mr-1" /> Sudah Dinilai</Badge>
@@ -101,7 +120,7 @@ export function JudgePanel({ initialArtworks, judgeName, onLogout }: JudgePanelP
             </TableHeader>
             <TableBody>
               {filteredArtworks.map((artwork) => (
-                <TableRow key={artwork.id}>
+                <TableRow key={artwork.id} className={artwork.isDisqualified ? "bg-red-900/20" : ""}>
                   <TableCell className="font-medium">{artwork.title}</TableCell>
                   <TableCell>{artwork.name} ({artwork.class})</TableCell>
                   <TableCell>{getJudgedByYouBadge(artwork)}</TableCell>
@@ -123,11 +142,13 @@ export function JudgePanel({ initialArtworks, judgeName, onLogout }: JudgePanelP
                               </DropdownMenuItem>
                             </DialogTrigger>
                              <GivePointsDialog artwork={artwork} onArtworkUpdate={handleUpdateArtworkState}>
-                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} disabled={artwork.isDisqualified}>
                                     <Star className="mr-2 h-4 w-4" />
                                     Beri / Edit Poin
                                 </DropdownMenuItem>
                             </GivePointsDialog>
+                            <DropdownMenuSeparator />
+                            <DisqualifyDialogJudge artwork={artwork} onDisqualify={handleDisqualify} />
                           </DropdownMenuContent>
                         </DropdownMenu>
 
@@ -213,4 +234,55 @@ function ScoreTable({ scores, judgeName }: { scores: JudgeScore[], judgeName: st
             </Table>
         </div>
     )
+}
+
+function DisqualifyDialogJudge({ artwork, onDisqualify }: { artwork: Artwork, onDisqualify: (id: string, reason: string) => void }) {
+    const [reason, setReason] = useState("");
+    const [open, setOpen] = useState(false);
+
+    const handleSubmit = () => {
+        if (reason.trim()) {
+            onDisqualify(artwork.id, reason);
+            setOpen(false);
+            setReason("");
+        }
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <DropdownMenuItem 
+                    onSelect={(e) => e.preventDefault()} 
+                    className="text-destructive focus:text-destructive"
+                    disabled={artwork.isDisqualified}
+                >
+                    <ShieldX className="mr-2 h-4 w-4" />
+                    Laporkan untuk Diskualifikasi
+                </DropdownMenuItem>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Laporkan Karya "{artwork.title}"?</DialogTitle>
+                    <DialogDescription>
+                        Laporan Anda akan dikirim ke admin untuk ditinjau. Berikan alasan yang jelas.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-2">
+                    <label htmlFor="reason" className="text-sm font-medium">Alasan Laporan</label>
+                    <Textarea
+                        id="reason"
+                        value={reason}
+                        onChange={(e) => setReason(e.target.value)}
+                        placeholder="Contoh: Plagiarisme, Tidak sesuai tema, dll."
+                    />
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>
+                    <Button variant="destructive" onClick={handleSubmit} disabled={!reason.trim()}>
+                        Kirim Laporan
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
 }

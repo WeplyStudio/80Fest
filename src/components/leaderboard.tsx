@@ -193,5 +193,3 @@ function ScoreTable({ scores, totalPoints }: { scores: JudgeScore[], totalPoints
         </div>
     )
 }
-
-    

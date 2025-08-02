@@ -5,11 +5,12 @@ import Image from "next/image";
 import { CommentSection } from "@/components/comment-section";
 import { SuggestedArtworks } from "@/components/suggested-artworks";
 import { ArtworkDetailClient } from "./client-page";
+import { Badge } from "@/components/ui/badge";
 
 export default async function ArtworkPage({ params }: { params: { id: string } }) {
   const artwork = await getArtworkById(params.id);
   
-  if (!artwork) {
+  if (!artwork || artwork.isDisqualified) {
     notFound();
   }
 
@@ -52,5 +53,3 @@ export default async function ArtworkPage({ params }: { params: { id: string } }
     </div>
   );
 }
-
-    

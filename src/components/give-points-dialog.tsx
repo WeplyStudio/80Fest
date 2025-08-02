@@ -87,11 +87,11 @@ export function GivePointsDialog({ children, artwork, onArtworkUpdate }: GivePoi
       }
       setIsLoadingJudge(false);
     }
-  }, [open, artwork.scores, form, judgeName]);
+  }, [open, artwork.scores, form]); // Removed judgeName from deps to avoid re-triggering
 
   
   const watchedCriteria = form.watch('criteria');
-  const totalScore = Object.values(watchedCriteria).reduce((sum, val) => sum + val, 0);
+  const totalScore = watchedCriteria ? Object.values(watchedCriteria).reduce((sum, val) => sum + val, 0) : 0;
 
   async function onSubmit(data: PointsFormValues) {
     if (!judgeName) {
@@ -100,6 +100,16 @@ export function GivePointsDialog({ children, artwork, onArtworkUpdate }: GivePoi
             title: "Juri Tidak Dikenal",
             description: "Harap login sebagai juri terlebih dahulu.",
         });
+        return;
+    }
+
+    if (artwork.isDisqualified) {
+        toast({
+            variant: "destructive",
+            title: "Karya Didiskualifikasi",
+            description: "Anda tidak dapat memberikan poin pada karya yang telah didiskualifikasi.",
+        });
+        setOpen(false);
         return;
     }
     

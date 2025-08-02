@@ -127,7 +127,8 @@ export async function submitArtwork(formData: FormData) {
       imageUrl: imageUrl,
       scores: [],
       totalPoints: 0,
-      status_juara: 0,
+      isDisqualified: false,
+      disqualificationReason: null,
       isInGallery: false,
       comments: [],
       createdAt: new Date(),
@@ -194,6 +195,31 @@ export async function deleteArtwork(artworkId: string) {
     }
 }
 
+export async function disqualifyArtwork(artworkId: string, reason: string, isDisqualified: boolean) {
+    try {
+        const artworks = await getArtworksCollection();
+        const updateData: any = {
+            isDisqualified: isDisqualified,
+            disqualificationReason: isDisqualified ? reason : null,
+        };
+        if (isDisqualified) {
+            updateData.totalPoints = 0;
+            updateData.scores = [];
+        }
+
+        await artworks.updateOne(
+            { _id: new ObjectId(artworkId) },
+            { $set: updateData }
+        );
+        revalidateAll();
+        return { success: true };
+    } catch (error) {
+        console.error("Gagal mengubah status diskualifikasi:", error);
+        return { success: false, message: 'Gagal mengubah status diskualifikasi.' };
+    }
+}
+
+
 const criteriaSchema = z.object({
   theme_match: z.number().min(1).max(10),
   layout: z.number().min(1).max(10),
@@ -213,6 +239,10 @@ export async function givePoints(artworkId: string, judgeName: string, criteria:
 
         if (!artwork) {
             return { success: false, message: "Karya tidak ditemukan." };
+        }
+        
+        if (artwork.isDisqualified) {
+            return { success: false, message: "Tidak dapat menilai karya yang telah didiskualifikasi." };
         }
 
         // Filter out the old score from this judge, if it exists

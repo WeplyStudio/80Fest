@@ -30,7 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Eye, MoreHorizontal, Trash, GalleryVertical, GalleryVerticalEnd, Pencil, Star, Users, Layers, MessageCircle, LogOut } from "lucide-react";
+import { Eye, MoreHorizontal, Trash, GalleryVertical, GalleryVerticalEnd, Pencil, Star, Users, Layers, MessageCircle, LogOut, ShieldX } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -43,12 +43,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { deleteArtwork, toggleGalleryStatus, setSubmissionStatus, setLeaderboardStatus } from "@/lib/actions";
+import { deleteArtwork, toggleGalleryStatus, setSubmissionStatus, setLeaderboardStatus, disqualifyArtwork } from "@/lib/actions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Switch } from "./ui/switch";
 import { Input } from "./ui/input";
 import { EditArtworkDialog } from "./edit-artwork-dialog";
 import React from "react";
+import { Textarea } from "./ui/textarea";
 
 
 interface AdminPanelProps {
@@ -124,6 +125,26 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLe
     }
   };
   
+  const handleDisqualify = async (artworkId: string, reason: string) => {
+      const result = await disqualifyArtwork(artworkId, reason, true);
+      if (result.success) {
+        setArtworks(prev => prev.map(art => art.id === artworkId ? { ...art, isDisqualified: true, disqualificationReason: reason, totalPoints: 0, scores:[] } : art));
+        toast({ title: 'Karya Didiskualifikasi', description: `Karya telah didiskualifikasi karena: ${reason}` });
+      } else {
+        toast({ variant: 'destructive', title: 'Gagal', description: result.message });
+      }
+  };
+
+  const handleRequalify = async (artworkId: string) => {
+      const result = await disqualifyArtwork(artworkId, "", false);
+      if (result.success) {
+        setArtworks(prev => prev.map(art => art.id === artworkId ? { ...art, isDisqualified: false, disqualificationReason: null } : art));
+        toast({ title: 'Diskualifikasi Dibatalkan', description: 'Karya kini dapat dinilai kembali.' });
+      } else {
+        toast({ variant: 'destructive', title: 'Gagal', description: result.message });
+      }
+  };
+
   const handleSubmissionToggle = async (checked: boolean) => {
     const result = await setSubmissionStatus(checked);
     if (result.success) {
@@ -150,9 +171,14 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLe
     }
   }
 
-  const getGalleryBadge = (inGallery: boolean) => {
-    if (!inGallery) return null;
-    return <Badge variant="secondary">Di Galeri</Badge>
+  const getStatusBadge = (artwork: Artwork) => {
+    if (artwork.isDisqualified) {
+        return <Badge variant="destructive" className="bg-red-900/50 text-red-300 border-red-500/30">{artwork.disqualificationReason}</Badge>
+    }
+    if (artwork.isInGallery) {
+        return <Badge variant="secondary">Di Galeri</Badge>
+    }
+    return null;
   }
   
   return (
@@ -271,7 +297,7 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLe
             </TableHeader>
             <TableBody>
               {filteredArtworks.map((artwork) => (
-                <TableRow key={artwork.id}>
+                <TableRow key={artwork.id} className={artwork.isDisqualified ? "bg-red-900/20" : ""}>
                   <TableCell className="font-medium">{artwork.title}</TableCell>
                   <TableCell>{artwork.name} ({artwork.class})</TableCell>
                    <TableCell className="font-semibold">
@@ -281,7 +307,7 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLe
                     </div>
                   </TableCell>
                   <TableCell className="flex flex-wrap gap-1">
-                      {getGalleryBadge(artwork.isInGallery)}
+                      {getStatusBadge(artwork)}
                   </TableCell>
                   <TableCell className="text-right">
                     <Dialog>
@@ -307,10 +333,19 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLe
                                     Edit Data
                                 </DropdownMenuItem>
                             </EditArtworkDialog>
-                            <DropdownMenuItem onClick={() => handleToggleGallery(artwork.id, artwork.isInGallery)}>
+                            <DropdownMenuItem onClick={() => handleToggleGallery(artwork.id, artwork.isInGallery)} disabled={artwork.isDisqualified}>
                               {artwork.isInGallery ? <GalleryVerticalEnd className="mr-2 h-4 w-4" /> : <GalleryVertical className="mr-2 h-4 w-4" />}
                               {artwork.isInGallery ? 'Hapus dari Galeri' : 'Tambahkan ke Galeri'}
                             </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                             {artwork.isDisqualified ? (
+                                <DropdownMenuItem onClick={() => handleRequalify(artwork.id)}>
+                                    <ShieldX className="mr-2 h-4 w-4" />
+                                    Batalkan Diskualifikasi
+                                </DropdownMenuItem>
+                             ) : (
+                                <DisqualifyDialog onDisqualify={handleDisqualify} artwork={artwork} />
+                             )}
                             <DropdownMenuSeparator />
                             <AlertDialogTrigger asChild>
                               <DropdownMenuItem className="text-destructive focus:text-destructive">
@@ -390,6 +425,9 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLe
 
 
 function ScoreTable({ scores, totalPoints }: { scores: JudgeScore[], totalPoints: number }) {
+    if (scores.length === 0) {
+        return <p className="text-sm text-muted-foreground p-4 text-center">Belum ada skor yang diberikan.</p>
+    }
     return (
         <div className="border rounded-lg">
             <Table>
@@ -426,4 +464,51 @@ function ScoreTable({ scores, totalPoints }: { scores: JudgeScore[], totalPoints
             </Table>
         </div>
     )
+}
+
+function DisqualifyDialog({ artwork, onDisqualify }: { artwork: Artwork, onDisqualify: (id: string, reason: string) => void }) {
+    const [reason, setReason] = useState("");
+    const [open, setOpen] = useState(false);
+
+    const handleSubmit = () => {
+        if (reason.trim()) {
+            onDisqualify(artwork.id, reason);
+            setOpen(false);
+            setReason("");
+        }
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                    <ShieldX className="mr-2 h-4 w-4" />
+                    Diskualifikasi Karya
+                </DropdownMenuItem>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Diskualifikasi Karya "{artwork.title}"?</DialogTitle>
+                    <DialogDescription>
+                        Tindakan ini akan menghapus semua skor dan poin, dan karya tidak akan bisa dinilai lagi. Berikan alasan diskualifikasi.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-2">
+                    <label htmlFor="reason" className="text-sm font-medium">Alasan Diskualifikasi</label>
+                    <Textarea
+                        id="reason"
+                        value={reason}
+                        onChange={(e) => setReason(e.target.value)}
+                        placeholder="Contoh: Plagiarisme, Tidak sesuai tema, dll."
+                    />
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>
+                    <Button variant="destructive" onClick={handleSubmit} disabled={!reason.trim()}>
+                        Ya, Diskualifikasi
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
 }
