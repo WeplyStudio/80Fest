@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState, type ReactNode, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -23,20 +23,11 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, ShieldAlert } from "lucide-react";
 import { givePoints } from "@/lib/actions";
 import type { Artwork, ScoreCriteria } from "@/lib/types";
 import { Slider } from "./ui/slider";
-
-const judges = ["Iqbal", "Jason", "Kyora"];
 
 const criteriaSchema = z.object({
   theme_match: z.number().min(1).max(10),
@@ -46,7 +37,6 @@ const criteriaSchema = z.object({
 });
 
 const pointsSchema = z.object({
-  judgeName: z.string().refine(val => judges.includes(val), { message: "Pilih juri yang valid." }),
   criteria: criteriaSchema,
 });
 
@@ -68,16 +58,25 @@ const criteriaLabels: { key: keyof ScoreCriteria; label: string }[] = [
 export function GivePointsDialog({ children, artwork, onArtworkUpdate }: GivePointsDialogProps) {
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [judgeName, setJudgeName] = useState<string | null>(null);
+  const [isLoadingJudge, setIsLoadingJudge] = useState(true);
   const { toast } = useToast();
 
-  const availableJudges = judges.filter(
-    judge => !artwork.scores.some(s => s.judgeName === judge)
-  );
+  useEffect(() => {
+    if (open) {
+      setIsLoadingJudge(true);
+      const cookie = document.cookie.split('; ').find(row => row.startsWith('judge-name='));
+      const name = cookie ? decodeURIComponent(cookie.split('=')[1]) : null;
+      setJudgeName(name);
+      setIsLoadingJudge(false);
+    }
+  }, [open]);
+
+  const isAlreadyJudged = judgeName ? artwork.scores.some(s => s.judgeName === judgeName) : false;
 
   const form = useForm<PointsFormValues>({
     resolver: zodResolver(pointsSchema),
     defaultValues: {
-      judgeName: availableJudges[0] || "",
       criteria: {
         theme_match: 5,
         layout: 5,
@@ -90,21 +89,29 @@ export function GivePointsDialog({ children, artwork, onArtworkUpdate }: GivePoi
   const watchedCriteria = form.watch('criteria');
   const totalScore = Object.values(watchedCriteria).reduce((sum, val) => sum + val, 0);
 
-
   async function onSubmit(data: PointsFormValues) {
+    if (!judgeName) {
+        toast({
+            variant: "destructive",
+            title: "Juri Tidak Dikenal",
+            description: "Harap login sebagai juri terlebih dahulu.",
+        });
+        return;
+    }
+    
     setIsSubmitting(true);
     
-    const result = await givePoints(artwork.id, data.judgeName, data.criteria);
+    const result = await givePoints(artwork.id, judgeName, data.criteria);
 
     if (result.success && result.updatedArtwork) {
       toast({
         title: "Poin Berhasil Diberikan!",
-        description: `Poin dari ${data.judgeName} telah ditambahkan.`,
+        description: `Poin dari ${judgeName} telah ditambahkan.`,
       });
       onArtworkUpdate(result.updatedArtwork);
       
       setOpen(false);
-      form.reset({ judgeName: availableJudges.length > 1 ? availableJudges[1] : "", criteria: { theme_match: 5, layout: 5, typography_color: 5, content_clarity: 5 } });
+      form.reset({ criteria: { theme_match: 5, layout: 5, typography_color: 5, content_clarity: 5 } });
     } else {
       toast({
         variant: "destructive",
@@ -114,46 +121,36 @@ export function GivePointsDialog({ children, artwork, onArtworkUpdate }: GivePoi
     }
     setIsSubmitting(false);
   }
+  
+  const renderContent = () => {
+      if (isLoadingJudge) {
+          return <div className="py-8 text-center text-muted-foreground">Memeriksa status juri...</div>;
+      }
 
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="font-headline">Beri Poin untuk "{artwork.title}"</DialogTitle>
-          <DialogDescription>
-            Pilih juri dan berikan poin (1-10) untuk setiap kriteria. Juri yang sudah menilai tidak akan muncul.
-          </DialogDescription>
-        </DialogHeader>
-         {availableJudges.length === 0 ? (
-          <div className="py-8 text-center text-muted-foreground">
-            Semua juri sudah memberikan penilaian untuk karya ini.
-          </div>
-        ) : (
+      if (!judgeName) {
+          return (
+            <div className="py-8 text-center text-destructive">
+                <ShieldAlert className="mx-auto h-12 w-12 mb-4" />
+                <h3 className="text-xl font-bold">Akses Ditolak</h3>
+                <p className="text-muted-foreground">Anda harus login sebagai juri untuk memberikan poin.</p>
+            </div>
+          );
+      }
+      
+      if (isAlreadyJudged) {
+          return (
+             <div className="py-8 text-center text-muted-foreground">
+                <p>Anda (<span className="font-bold text-primary">{judgeName}</span>) sudah memberikan penilaian untuk karya ini.</p>
+            </div>
+          );
+      }
+
+      return (
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="judgeName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nama Juri</FormLabel>
-                   <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pilih juri" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                        {availableJudges.map(judge => (
-                            <SelectItem key={judge} value={judge}>{judge}</SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="p-3 bg-muted/50 rounded-md text-center">
+                Menilai sebagai: <span className="font-bold text-primary">{judgeName}</span>
+            </div>
             
             <div className="space-y-4">
                 {criteriaLabels.map(({ key, label }) => (
@@ -203,7 +200,20 @@ export function GivePointsDialog({ children, artwork, onArtworkUpdate }: GivePoi
             </DialogFooter>
           </form>
         </Form>
-        )}
+      );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="font-headline">Beri Poin untuk "{artwork.title}"</DialogTitle>
+          <DialogDescription>
+            Berikan poin (1-10) untuk setiap kriteria.
+          </DialogDescription>
+        </DialogHeader>
+        {renderContent()}
       </DialogContent>
     </Dialog>
   );
