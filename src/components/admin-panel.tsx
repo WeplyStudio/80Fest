@@ -3,7 +3,7 @@
 
 import { useState, useMemo } from "react";
 import Image from "next/image";
-import type { Artwork, ContestInfoData, JudgeScore } from "@/lib/types";
+import type { Artwork, ContestInfoData, JudgeScore, AnnouncementBannerData } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -52,6 +52,7 @@ import { EditArtworkDialog } from "./edit-artwork-dialog";
 import React from "react";
 import { Textarea } from "./ui/textarea";
 import { ContestInfoEditor } from "./contest-info-editor";
+import { AnnouncementBannerEditor } from "./announcement-banner-editor";
 
 
 interface AdminPanelProps {
@@ -59,10 +60,11 @@ interface AdminPanelProps {
     initialSubmissionStatus: boolean;
     initialLeaderboardStatus: boolean;
     initialContestInfo: ContestInfoData;
+    initialBannerInfo: AnnouncementBannerData;
     onLogout: () => void;
 }
 
-export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLeaderboardStatus, initialContestInfo, onLogout }: AdminPanelProps) {
+export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLeaderboardStatus, initialContestInfo, initialBannerInfo, onLogout }: AdminPanelProps) {
   const [artworks, setArtworks] = useState<Artwork[]>(initialArtworks);
   const [submissionOpen, setSubmissionOpen] = useState(initialSubmissionStatus);
   const [leaderboardVisible, setLeaderboardVisible] = useState(initialLeaderboardStatus);
@@ -244,42 +246,45 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLe
         </div>
       </section>
 
-      <ContestInfoEditor initialData={initialContestInfo} />
+      <div className="grid lg:grid-cols-2 gap-8">
+        <AnnouncementBannerEditor initialData={initialBannerInfo} />
+        <Card>
+            <CardHeader>
+                <CardTitle className="font-headline">Pengaturan Lomba</CardTitle>
+                <CardDescription>Atur status pendaftaran dan visibilitas papan peringkat.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid sm:grid-cols-1 gap-4">
+                <div className="flex items-center space-x-4 rounded-md border p-4">
+                    <div className="flex-1 space-y-1">
+                        <p className="text-sm font-medium leading-none">Buka Pendaftaran Karya</p>
+                        <p className="text-sm text-muted-foreground">
+                            Jika aktif, peserta dapat mengunggah karya mereka.
+                        </p>
+                    </div>
+                    <Switch
+                        checked={submissionOpen}
+                        onCheckedChange={handleSubmissionToggle}
+                        id="submission-status"
+                    />
+                </div>
+                <div className="flex items-center space-x-4 rounded-md border p-4">
+                    <div className="flex-1 space-y-1">
+                        <p className="text-sm font-medium leading-none">Tampilkan Papan Peringkat</p>
+                        <p className="text-sm text-muted-foreground">
+                            Jika aktif, hasil akhir akan tampil di halaman papan peringkat.
+                        </p>
+                    </div>
+                    <Switch
+                        checked={leaderboardVisible}
+                        onCheckedChange={handleLeaderboardToggle}
+                        id="leaderboard-status"
+                    />
+                </div>
+            </CardContent>
+        </Card>
+      </div>
 
-      <Card>
-        <CardHeader>
-            <CardTitle className="font-headline">Pengaturan Lomba</CardTitle>
-            <CardDescription>Atur status pendaftaran dan visibilitas papan peringkat.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid sm:grid-cols-2 gap-4">
-            <div className="flex items-center space-x-4 rounded-md border p-4">
-                <div className="flex-1 space-y-1">
-                    <p className="text-sm font-medium leading-none">Buka Pendaftaran Karya</p>
-                    <p className="text-sm text-muted-foreground">
-                        Jika aktif, peserta dapat mengunggah karya mereka.
-                    </p>
-                </div>
-                 <Switch
-                    checked={submissionOpen}
-                    onCheckedChange={handleSubmissionToggle}
-                    id="submission-status"
-                />
-            </div>
-             <div className="flex items-center space-x-4 rounded-md border p-4">
-                <div className="flex-1 space-y-1">
-                    <p className="text-sm font-medium leading-none">Tampilkan Papan Peringkat</p>
-                    <p className="text-sm text-muted-foreground">
-                        Jika aktif, hasil akhir akan tampil di halaman papan peringkat.
-                    </p>
-                </div>
-                 <Switch
-                    checked={leaderboardVisible}
-                    onCheckedChange={handleLeaderboardToggle}
-                    id="leaderboard-status"
-                />
-            </div>
-        </CardContent>
-      </Card>
+      <ContestInfoEditor initialData={initialContestInfo} />
       
       <div className="space-y-4">
         <h2 className="text-2xl font-bold font-headline">Daftar Karya Peserta</h2>

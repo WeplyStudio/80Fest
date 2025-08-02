@@ -42,3 +42,8 @@ export type ContestInfoData = {
     rules: string;
     criteria: string;
 };
+
+export type AnnouncementBannerData = {
+    text: string;
+    isEnabled: boolean;
+};

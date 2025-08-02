@@ -12,8 +12,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Lock } from "lucide-react";
-import { getArtworks, getSubmissionStatus, getLeaderboardStatus, getContestInfo } from "@/lib/actions";
-import { Artwork, ContestInfoData } from "@/lib/types";
+import { getArtworks, getSubmissionStatus, getLeaderboardStatus, getContestInfo, getAnnouncementBanner } from "@/lib/actions";
+import { Artwork, ContestInfoData, AnnouncementBannerData } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const loginSchema = z.object({
@@ -32,6 +32,7 @@ export default function AdminPage() {
   const [submissionStatus, setSubmissionStatus] = useState<boolean | null>(null);
   const [leaderboardStatus, setLeaderboardStatus] = useState<boolean | null>(null);
   const [contestInfo, setContestInfo] = useState<ContestInfoData | null>(null);
+  const [bannerInfo, setBannerInfo] = useState<AnnouncementBannerData | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -59,12 +60,14 @@ export default function AdminPage() {
         getArtworks(),
         getSubmissionStatus(),
         getLeaderboardStatus(),
-        getContestInfo()
-      ]).then(([artworksData, submissionStatusData, leaderboardStatusData, contestInfoData]) => {
+        getContestInfo(),
+        getAnnouncementBanner()
+      ]).then(([artworksData, submissionStatusData, leaderboardStatusData, contestInfoData, bannerData]) => {
             setArtworks(artworksData);
             setSubmissionStatus(submissionStatusData);
             setLeaderboardStatus(leaderboardStatusData);
             setContestInfo(contestInfoData);
+            setBannerInfo(bannerData);
             setLoading(false);
       }).catch(err => {
             console.error(err);
@@ -102,7 +105,7 @@ export default function AdminPage() {
   }
 
   if (isAuthenticated) {
-     if (loading || !artworks || submissionStatus === null || leaderboardStatus === null || !contestInfo) {
+     if (loading || !artworks || submissionStatus === null || leaderboardStatus === null || !contestInfo || !bannerInfo) {
       return (
         <div className="space-y-4">
           <div>
@@ -123,6 +126,7 @@ export default function AdminPage() {
         initialSubmissionStatus={submissionStatus} 
         initialLeaderboardStatus={leaderboardStatus} 
         initialContestInfo={contestInfo}
+        initialBannerInfo={bannerInfo}
         onLogout={handleLogout}
     />;
   }

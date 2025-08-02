@@ -5,6 +5,7 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Toaster } from "@/components/ui/toaster"
 import { ScreenProtection } from "@/components/screen-protection";
+import { AnnouncementBanner } from "@/components/layout/announcement-banner";
 
 export const metadata: Metadata = {
   title: "80Fest - Lomba Desain Poster",
@@ -28,6 +29,7 @@ export default function RootLayout({
         <ScreenProtection>
             <div className="flex flex-col min-h-screen">
             <Header />
+            <AnnouncementBanner />
             <main className="flex-grow container mx-auto px-4 py-8">
                 {children}
             </main>

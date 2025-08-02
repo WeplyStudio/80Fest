@@ -5,7 +5,7 @@ import { z } from "zod";
 import { getArtworksCollection, getSettingsCollection } from "./mongodb";
 import { revalidatePath } from "next/cache";
 import { ObjectId } from "mongodb";
-import type { Artwork, JudgeScore, Comment, ScoreCriteria, ContestInfoData } from "./types";
+import type { Artwork, JudgeScore, Comment, ScoreCriteria, ContestInfoData, AnnouncementBannerData } from "./types";
 
 // Helper to revalidate all important paths
 function revalidateAll() {
@@ -430,5 +430,47 @@ export async function updateContestInfo(formData: FormData) {
     } catch (error) {
         console.error("Gagal memperbarui info kontes:", error);
         return { success: false, message: "Gagal memperbarui info kontes." };
+    }
+}
+
+// --- Announcement Banner Actions ---
+
+const bannerSchema = z.object({
+  text: z.string(),
+  isEnabled: z.boolean(),
+});
+
+export async function getAnnouncementBanner(): Promise<AnnouncementBannerData> {
+    try {
+        const settings = await getSettingsCollection();
+        const config = await settings.findOne({ key: "announcementBanner" });
+        return {
+            text: config?.text || "",
+            isEnabled: config?.isEnabled || false,
+        };
+    } catch (error) {
+        console.error("Gagal mengambil data banner:", error);
+        return { text: "", isEnabled: false };
+    }
+}
+
+export async function updateAnnouncementBanner(data: { text: string; isEnabled: boolean }) {
+    const parsed = bannerSchema.safeParse(data);
+    if (!parsed.success) {
+        return { success: false, message: 'Data banner tidak valid.' };
+    }
+    
+    try {
+        const settings = await getSettingsCollection();
+        await settings.updateOne(
+            { key: "announcementBanner" },
+            { $set: parsed.data },
+            { upsert: true }
+        );
+        revalidateAll();
+        return { success: true };
+    } catch (error) {
+        console.error("Gagal memperbarui banner:", error);
+        return { success: false, message: "Gagal memperbarui banner pengumuman." };
     }
 }
