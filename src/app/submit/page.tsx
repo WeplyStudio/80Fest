@@ -28,7 +28,7 @@ import Link from "next/link";
 import imageCompression from 'browser-image-compression';
 
 const classes = ["VII", "VIII", "IX"] as const;
-const MAX_FILE_SIZE_MB = 32;
+const MAX_FILE_SIZE_MB = 1;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 const submissionSchema = z.object({
