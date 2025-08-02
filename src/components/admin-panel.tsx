@@ -48,7 +48,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/
 import { Switch } from "./ui/switch";
 import { Input } from "./ui/input";
 import { EditArtworkDialog } from "./edit-artwork-dialog";
-import { GivePointsDialog } from "./give-points-dialog";
 import React from "react";
 
 
@@ -301,12 +300,6 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLe
                                     Edit Data
                                 </DropdownMenuItem>
                             </EditArtworkDialog>
-                             <GivePointsDialog artwork={artwork} onArtworkUpdate={handleUpdateArtworkState}>
-                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                    <Star className="mr-2 h-4 w-4" />
-                                    Beri Poin
-                                </DropdownMenuItem>
-                            </GivePointsDialog>
                             <DropdownMenuItem onClick={() => handleToggleGallery(artwork.id, artwork.isInGallery)}>
                               {artwork.isInGallery ? <GalleryVerticalEnd className="mr-2 h-4 w-4" /> : <GalleryVertical className="mr-2 h-4 w-4" />}
                               {artwork.isInGallery ? 'Hapus dari Galeri' : 'Tambahkan ke Galeri'}
@@ -427,3 +420,4 @@ function ScoreTable({ scores, totalPoints }: { scores: JudgeScore[], totalPoints
         </div>
     )
 }
+

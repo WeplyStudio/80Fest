@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,7 +11,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { ShieldCheck } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { getArtworks } from "@/lib/actions";
+import { Artwork } from "@/lib/types";
+import { JudgePanel } from "@/components/judge-panel";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const loginSchema = z.object({
   password: z.string().min(1, "Password tidak boleh kosong."),
@@ -26,9 +29,12 @@ const JUDGE_PASSWORDS: Record<string, string> = {
 };
 const AUTH_COOKIE_NAME = "judge-name";
 
-export default function JudgeLoginPage() {
+export default function JudgePage() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [judgeName, setJudgeName] = useState<string | null>(null);
+  const [artworks, setArtworks] = useState<Artwork[] | null>(null);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const router = useRouter();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -37,14 +43,43 @@ export default function JudgeLoginPage() {
     },
   });
 
+  // Check for auth cookie on initial load
+  useEffect(() => {
+    const cookie = document.cookie.split('; ').find(row => row.startsWith(`${AUTH_COOKIE_NAME}=`));
+    const name = cookie ? decodeURIComponent(cookie.split('=')[1]) : null;
+    if (name) {
+      setIsAuthenticated(true);
+      setJudgeName(name);
+    } else {
+      setLoading(false);
+    }
+  }, []);
+  
+  useEffect(() => {
+    if (isAuthenticated) {
+      setLoading(true);
+      getArtworks()
+        .then(artworksData => {
+            setArtworks(artworksData);
+            setLoading(false);
+        })
+        .catch(err => {
+            console.error(err);
+            toast({ variant: 'destructive', title: 'Gagal memuat data karya' });
+            setLoading(false);
+        });
+    }
+  }, [isAuthenticated, toast]);
+
+
   function onSubmit(data: LoginFormValues) {
-    const judgeName = JUDGE_PASSWORDS[data.password];
+    const name = JUDGE_PASSWORDS[data.password];
     
-    if (judgeName) {
-      toast({ title: "Login Berhasil", description: `Selamat datang, Juri ${judgeName}!` });
-      // Set a cookie that expires in 7 days
-      document.cookie = `${AUTH_COOKIE_NAME}=${encodeURIComponent(judgeName)}; path=/; max-age=604800`;
-      router.push("/"); // Redirect to home page after login
+    if (name) {
+      toast({ title: "Login Berhasil", description: `Selamat datang, Juri ${name}!` });
+      document.cookie = `${AUTH_COOKIE_NAME}=${encodeURIComponent(name)}; path=/; max-age=604800`;
+      setJudgeName(name);
+      setIsAuthenticated(true);
     } else {
       toast({
         variant: "destructive",
@@ -53,6 +88,29 @@ export default function JudgeLoginPage() {
       });
       form.reset();
     }
+  }
+
+  if (isAuthenticated) {
+     if (loading || !artworks || !judgeName) {
+      return (
+        <div className="space-y-4">
+          <div>
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-96 mt-2" />
+          </div>
+          <div className="border rounded-lg p-4 space-y-2">
+            <Skeleton className="h-10 w-full" />
+            {[...Array(5)].map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full" />
+            ))}
+          </div>
+        </div>
+      );
+    }
+    return <JudgePanel 
+        initialArtworks={artworks} 
+        judgeName={judgeName}
+    />;
   }
 
   return (
@@ -91,3 +149,4 @@ export default function JudgeLoginPage() {
     </div>
   );
 }
+

@@ -62,29 +62,33 @@ export function GivePointsDialog({ children, artwork, onArtworkUpdate }: GivePoi
   const [isLoadingJudge, setIsLoadingJudge] = useState(true);
   const { toast } = useToast();
 
+  const form = useForm<PointsFormValues>({
+    resolver: zodResolver(pointsSchema),
+    // Set default values later in useEffect
+  });
+
   useEffect(() => {
     if (open) {
       setIsLoadingJudge(true);
       const cookie = document.cookie.split('; ').find(row => row.startsWith('judge-name='));
       const name = cookie ? decodeURIComponent(cookie.split('=')[1]) : null;
       setJudgeName(name);
+
+      if (name) {
+        const existingScore = artwork.scores.find(s => s.judgeName === name);
+        form.reset({
+          criteria: existingScore?.criteria || {
+            theme_match: 5,
+            layout: 5,
+            typography_color: 5,
+            content_clarity: 5
+          }
+        });
+      }
       setIsLoadingJudge(false);
     }
-  }, [open]);
+  }, [open, artwork.scores, form, judgeName]);
 
-  const isAlreadyJudged = judgeName ? artwork.scores.some(s => s.judgeName === judgeName) : false;
-
-  const form = useForm<PointsFormValues>({
-    resolver: zodResolver(pointsSchema),
-    defaultValues: {
-      criteria: {
-        theme_match: 5,
-        layout: 5,
-        typography_color: 5,
-        content_clarity: 5
-      }
-    },
-  });
   
   const watchedCriteria = form.watch('criteria');
   const totalScore = Object.values(watchedCriteria).reduce((sum, val) => sum + val, 0);
@@ -105,13 +109,11 @@ export function GivePointsDialog({ children, artwork, onArtworkUpdate }: GivePoi
 
     if (result.success && result.updatedArtwork) {
       toast({
-        title: "Poin Berhasil Diberikan!",
-        description: `Poin dari ${judgeName} telah ditambahkan.`,
+        title: "Poin Berhasil Disimpan!",
+        description: `Poin dari ${judgeName} telah disimpan.`,
       });
       onArtworkUpdate(result.updatedArtwork);
-      
       setOpen(false);
-      form.reset({ criteria: { theme_match: 5, layout: 5, typography_color: 5, content_clarity: 5 } });
     } else {
       toast({
         variant: "destructive",
@@ -123,8 +125,8 @@ export function GivePointsDialog({ children, artwork, onArtworkUpdate }: GivePoi
   }
   
   const renderContent = () => {
-      if (isLoadingJudge) {
-          return <div className="py-8 text-center text-muted-foreground">Memeriksa status juri...</div>;
+      if (isLoadingJudge || form.formState.isLoading) {
+          return <div className="py-8 text-center text-muted-foreground">Memuat data penilaian...</div>;
       }
 
       if (!judgeName) {
@@ -137,14 +139,6 @@ export function GivePointsDialog({ children, artwork, onArtworkUpdate }: GivePoi
           );
       }
       
-      if (isAlreadyJudged) {
-          return (
-             <div className="py-8 text-center text-muted-foreground">
-                <p>Anda (<span className="font-bold text-primary">{judgeName}</span>) sudah memberikan penilaian untuk karya ini.</p>
-            </div>
-          );
-      }
-
       return (
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -210,7 +204,7 @@ export function GivePointsDialog({ children, artwork, onArtworkUpdate }: GivePoi
         <DialogHeader>
           <DialogTitle className="font-headline">Beri Poin untuk "{artwork.title}"</DialogTitle>
           <DialogDescription>
-            Berikan poin (1-10) untuk setiap kriteria.
+            Berikan poin (1-10) untuk setiap kriteria. Perubahan akan menimpa skor sebelumnya.
           </DialogDescription>
         </DialogHeader>
         {renderContent()}

@@ -6,24 +6,22 @@ import { getArtworksCollection, getSettingsCollection } from "./mongodb";
 import { revalidatePath } from "next/cache";
 import { ObjectId } from "mongodb";
 import type { Artwork, JudgeScore, Comment, ScoreCriteria } from "./types";
-import { revalidateTag } from "next/cache";
-
-const classes = ["VII", "VIII", "IX"] as const;
 
 // Helper to revalidate all important paths
 function revalidateAll() {
     revalidatePath("/", "layout");
 }
 
+const classes = ["VII", "VIII", "IX"] as const;
+
 const submissionSchema = z.object({
   name: z.string().min(1),
   class: z.enum(classes),
   title: z.string().min(1),
   description: z.string().min(1),
-  // artworkFile is not part of the base schema as it's handled separately
 });
 
-const editSchema = submissionSchema.omit({ artworkFile: true });
+const editSchema = submissionSchema;
 
 // Helper function to convert a file to a Data URI
 async function fileToDataUri(file: File): Promise<string> {
@@ -35,60 +33,22 @@ async function fileToDataUri(file: File): Promise<string> {
 function docToArtwork(doc: any): Artwork {
     if (!doc) return doc;
     const { _id, ...rest } = doc;
-    const allComments: any[] = doc.comments || [];
     
-    // Map to hold comments and their nested replies
-    const commentsById = new Map<string, Comment>();
-    allComments.forEach(c => {
-        commentsById.set(c.id.toString(), {
-            ...c,
-            id: c.id.toString(),
-            replies: [],
-        });
-    });
-
-    const rootComments: Comment[] = [];
-    commentsById.forEach(comment => {
-        if (comment.parentId) {
-            const parentIdStr = comment.parentId.toString();
-            if (commentsById.has(parentIdStr)) {
-                const parent = commentsById.get(parentIdStr);
-                parent?.replies.push(comment);
-            }
-        } else {
-            rootComments.push(comment);
-        }
-    });
-
-    // Recursively sort replies by date
-    const sortReplies = (comments: Comment[]) => {
-        comments.sort((a,b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-        comments.forEach(c => {
-            if (c.replies.length > 0) {
-                sortReplies(c.replies);
-            }
-        })
-    };
-    sortReplies(rootComments);
-    
-    // Flatten the tree back to a simple array for the frontend, but keep parentIds
-    const flatCommentsWithParentId: Comment[] = [];
-    allComments.forEach(c => {
-        flatCommentsWithParentId.push({
-            ...c,
-            id: c.id.toString(),
-            parentId: c.parentId ? c.parentId.toString() : null,
-            replies: [] // Reset replies, as frontend will build the tree
-        });
-    });
-
+    // Process comments to ensure IDs are strings
+    const processedComments = (doc.comments || []).map((c: any) => ({
+        ...c,
+        id: c.id.toString(),
+        parentId: c.parentId ? c.parentId.toString() : null,
+        replies: [] // Replies are constructed on the client
+    }));
 
     return {
         ...rest,
         id: _id.toString(),
         scores: doc.scores || [],
         totalPoints: doc.totalPoints || 0,
-        comments: flatCommentsWithParentId,
+        comments: processedComments,
+        createdAt: doc.createdAt,
     } as Artwork;
 }
 
@@ -146,8 +106,7 @@ export async function submitArtwork(formData: FormData) {
   if (!file || file.size === 0) {
       return { success: false, message: 'File poster tidak valid atau kosong.' };
   }
-  // The client side will handle compression, but we add a server-side check as a fallback.
-  if (file.size > 10 * 1024 * 1024) {
+  if (file.size > 10 * 1024 * 1024) { // 10MB limit on server
       return { success: false, message: 'Ukuran file maksimal 10MB.' };
   }
   if (!['image/png', 'image/jpeg'].includes(file.type)) {
@@ -197,7 +156,9 @@ export async function updateArtwork(artworkId: string, formData: FormData) {
             { $set: parsed.data }
         );
 
-        revalidateAll();
+        revalidatePath(`/karya/${artworkId}`);
+        revalidatePath(`/admin`);
+        revalidatePath(`/judge`);
         return { success: true };
     } catch (error) {
         console.error("Gagal memperbarui data:", error);
@@ -254,11 +215,8 @@ export async function givePoints(artworkId: string, judgeName: string, criteria:
             return { success: false, message: "Karya tidak ditemukan." };
         }
 
-        const existingScores: JudgeScore[] = artwork.scores || [];
-        
-        if (existingScores.some(s => s.judgeName === judgeName)) {
-            return { success: false, message: `${judgeName} sudah memberikan nilai untuk karya ini.` };
-        }
+        // Filter out the old score from this judge, if it exists
+        const otherScores: JudgeScore[] = (artwork.scores || []).filter(s => s.judgeName !== judgeName);
         
         const newScore: JudgeScore = {
             judgeName: judgeName,
@@ -266,7 +224,7 @@ export async function givePoints(artworkId: string, judgeName: string, criteria:
             totalScore: Object.values(parsedCriteria.data).reduce((sum, val) => sum + val, 0)
         }
 
-        const newScores = [...existingScores, newScore];
+        const newScores = [...otherScores, newScore];
         const totalPoints = newScores.reduce((acc, curr) => acc + curr.totalScore, 0);
 
         const result = await artworks.findOneAndUpdate(
@@ -275,7 +233,7 @@ export async function givePoints(artworkId: string, judgeName: string, criteria:
             { returnDocument: 'after' }
         );
 
-        revalidateAll();
+        revalidatePath(`/judge`);
         
         return { success: true, updatedArtwork: docToArtwork(result) };
 
@@ -315,8 +273,8 @@ export async function addComment(artworkId: string, formData: FormData, parentId
         if (!result) {
             return { success: false, message: "Karya tidak ditemukan." };
         }
-
-        revalidateAll();
+        
+        revalidatePath(`/karya/${artworkId}`);
 
         return { success: true, updatedArtwork: docToArtwork(result) };
 
@@ -385,5 +343,3 @@ export async function setLeaderboardStatus(showResults: boolean) {
         return { success: false, message: "Gagal mengubah status leaderboard." };
     }
 }
-
-    

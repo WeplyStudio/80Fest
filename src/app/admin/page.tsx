@@ -46,6 +46,8 @@ export default function AdminPage() {
     const cookie = document.cookie.split('; ').find(row => row.startsWith(`${AUTH_COOKIE_NAME}=`));
     if (cookie?.split('=')[1] === 'true') {
       setIsAuthenticated(true);
+    } else {
+      setLoading(false); // If not authenticated, stop loading
     }
   }, []);
   
