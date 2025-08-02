@@ -72,7 +72,7 @@ export function ContestInfoEditor({ initialData }: ContestInfoEditorProps) {
                 <CardTitle className="font-headline">Editor Informasi Lomba</CardTitle>
                 <CardDescription>
                     Ubah konten yang tampil di bagian "Informasi Lomba" pada halaman utama.
-                    Anda bisa menggunakan format Markdown sederhana (misalnya: `*teks miring*`, `**teks tebal**`, dan `- daftar poin`).
+                    Untuk membuat daftar, awali setiap baris dengan tanda `-`. Tekan Enter dua kali untuk paragraf baru.
                 </CardDescription>
             </CardHeader>
             <FormProvider {...form}>
