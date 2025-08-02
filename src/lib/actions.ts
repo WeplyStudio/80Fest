@@ -99,6 +99,40 @@ export async function getArtworks(): Promise<Artwork[]> {
     return artworksFromDb.map(docToArtwork);
 }
 
+export async function getArtworkById(id: string): Promise<Artwork | null> {
+    try {
+        if (!ObjectId.isValid(id)) {
+            return null;
+        }
+        const collection = await getArtworksCollection();
+        const artwork = await collection.findOne({ _id: new ObjectId(id) });
+        if (!artwork) {
+            return null;
+        }
+        return docToArtwork(artwork);
+    } catch (error) {
+        console.error("Error fetching artwork by ID:", error);
+        return null;
+    }
+}
+
+export async function getSuggestedArtworks(currentId: string, limit: number = 4): Promise<Artwork[]> {
+     try {
+        if (!ObjectId.isValid(currentId)) {
+            return [];
+        }
+        const collection = await getArtworksCollection();
+        const suggestions = await collection.aggregate([
+            { $match: { _id: { $ne: new ObjectId(currentId) }, isInGallery: true } },
+            { $sample: { size: limit } }
+        ]).toArray();
+        return suggestions.map(docToArtwork);
+    } catch (error) {
+        console.error("Error fetching suggested artworks:", error);
+        return [];
+    }
+}
+
 export async function submitArtwork(formData: FormData) {
   const isSubmissionOpen = await getSubmissionStatus();
   if (!isSubmissionOpen) {
@@ -351,3 +385,5 @@ export async function setLeaderboardStatus(showResults: boolean) {
         return { success: false, message: "Gagal mengubah status leaderboard." };
     }
 }
+
+    
