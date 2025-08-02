@@ -7,6 +7,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import type { Artwork } from "@/lib/types";
 import { Camera, MessageCircle } from "lucide-react";
+import { CommentSection } from "./comment-section";
 
 interface GalleryProps {
   artworks: Artwork[];
@@ -88,10 +89,7 @@ export function Gallery({ artworks: initialArtworks }: GalleryProps) {
                                 <h3 className="font-semibold font-headline mb-2">Deskripsi Karya</h3>
                                 <p className="text-muted-foreground text-sm leading-relaxed">{currentArtwork.description}</p>
                             </div>
-                            <div className="text-center py-8 text-muted-foreground text-sm rounded-lg bg-card/50 mt-4">
-                                 <MessageCircle className="mx-auto h-8 w-8 mb-2" />
-                                <p>Komentar dinonaktifkan untuk kontes ini.</p>
-                            </div>
+                            <CommentSection artwork={currentArtwork} onArtworkUpdate={handleArtworkUpdate} />
                         </div>
                     </div>
                     </DialogContent>

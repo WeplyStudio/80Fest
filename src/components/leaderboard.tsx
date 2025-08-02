@@ -17,6 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import React from 'react';
+import { CommentSection } from './comment-section';
 
 interface LeaderboardProps {
   rankedArtworks: Artwork[];
@@ -156,10 +157,7 @@ function WinnerCard({ artwork, rank, onArtworkUpdate, findArtworkById }: WinnerC
                     <h3 className="font-semibold font-headline mb-2">Rincian Poin</h3>
                     <ScoreTable scores={currentArtwork.scores || []} totalPoints={currentArtwork.totalPoints || 0} />
                   </div>
-                   <div className="text-center py-8 text-muted-foreground text-sm rounded-lg bg-card/50 mt-4">
-                        <MessageCircle className="mx-auto h-8 w-8 mb-2" />
-                       <p>Komentar dinonaktifkan untuk kontes ini.</p>
-                   </div>
+                  <CommentSection artwork={currentArtwork} onArtworkUpdate={handleArtworkUpdate} />
               </div>
           </div>
       </DialogContent>
