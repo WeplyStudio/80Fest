@@ -70,13 +70,30 @@ export function Gallery({ artworks: initialArtworks }: GalleryProps) {
                         <DialogDescription>{currentArtwork.name} - {currentArtwork.class}</DialogDescription>
                     </DialogHeader>
                     <div className="grid md:grid-cols-2 gap-6 items-start">
-                        <div className="aspect-[3/4] w-full relative rounded-md overflow-hidden bg-muted">
+                        <div className="aspect-[3/4] w-full relative rounded-md overflow-hidden bg-muted group/watermark">
                             <Image
                                 src={currentArtwork.imageUrl}
                                 alt={currentArtwork.title}
                                 fill
                                 className="object-contain"
                             />
+                            <div 
+                                className="absolute inset-0 pointer-events-none text-white/10 text-center text-xl font-bold p-4 flex items-center justify-center"
+                                style={{
+                                    backgroundImage: `
+                                        linear-gradient(45deg, currentColor 25%, transparent 25%),
+                                        linear-gradient(-45deg, currentColor 25%, transparent 25%),
+                                        linear-gradient(45deg, transparent 75%, currentColor 75%),
+                                        linear-gradient(-45deg, transparent 75%, currentColor 75%)
+                                    `,
+                                    backgroundSize: '20px 20px',
+                                    backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px'
+                                }}
+                            >
+                                <span className="p-2 rounded-md bg-black/10 backdrop-blur-sm">
+                                    Hak Cipta Dilindungi &copy; {currentArtwork.name}
+                                </span>
+                            </div>
                         </div>
                         <div className="flex flex-col gap-4">
                             <div>
