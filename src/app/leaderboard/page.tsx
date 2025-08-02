@@ -11,15 +11,15 @@ export default async function LeaderboardPage() {
        <div className="space-y-12">
         <div className="text-center">
             <h1 className="text-4xl md:text-5xl font-bold font-headline text-primary">Leaderboard</h1>
-            <p className="mt-2 text-lg text-muted-foreground">
-            Hasil akhir dari Lomba Desain Poster 80Fest!
+            <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
+              The final results of the 80Fest Poster Design Contest!
             </p>
         </div>
-        <div className="text-center py-16 border-2 border-dashed rounded-lg">
+        <div className="text-center py-20 border-2 border-dashed border-border/50 rounded-xl bg-card/50">
             <Trophy className="mx-auto h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-4 text-lg font-medium">Hasil Belum Diumumkan</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-            Proses penilaian masih berlangsung. Nantikan pengumuman juara di halaman ini!
+            <h3 className="mt-6 text-xl font-medium">Results Are Not Yet Announced</h3>
+            <p className="mt-2 text-base text-muted-foreground">
+              The judging process is still ongoing. Stay tuned for the winner announcement on this page!
             </p>
         </div>
       </div>
@@ -35,8 +35,8 @@ export default async function LeaderboardPage() {
     <div className="space-y-12">
       <div className="text-center">
         <h1 className="text-4xl md:text-5xl font-bold font-headline text-primary">Leaderboard</h1>
-        <p className="mt-2 text-lg text-muted-foreground">
-          Hasil akhir dari Lomba Desain Poster 80Fest!
+        <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
+          The final results of the 80Fest Poster Design Contest!
         </p>
       </div>
       <Leaderboard rankedArtworks={rankedArtworks} />

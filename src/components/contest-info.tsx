@@ -5,41 +5,41 @@ import { Calendar, Palette, ScrollText, ClipboardCheck } from "lucide-react";
 const infoItems = [
   {
     icon: Palette,
-    title: "Tema Poster",
+    title: "Poster Theme",
     content: "Dirgahayu republik indonesia ke 80: Bersatu Berdaulat Rakyat Sejahtera Indonesia Maju",
   },
   {
     icon: Calendar,
-    title: "Jadwal Penting",
+    title: "Important Dates",
     content: (
         <ul className="list-disc pl-5 space-y-1">
-            <li><strong>Pengumpulan:</strong> 6 - 8 Agustus 2025</li>
-            <li><strong>Periode Penjurian:</strong> 8 Agustus 2025</li>
-            <li><strong>Pengumuman Pemenang:</strong> 9 Agustus 2025</li>
+            <li><strong>Submission:</strong> August 6 - 8, 2025</li>
+            <li><strong>Judging Period:</strong> August 8, 2025</li>
+            <li><strong>Winner Announcement:</strong> August 9, 2025</li>
         </ul>
     ),
   },
   {
     icon: ScrollText,
-    title: "Ketentuan Umum",
+    title: "General Rules",
     content: (
         <ul className="list-disc pl-5 space-y-1">
-            <li>Karya harus 100% original milik peserta dan belum pernah di publikasikan di perlombaan apapun!</li>
-            <li>Juri berhak mendiskualifikasi peserta apabila ketahuan mengambil atau menyalin atau menduplikasikan karya orang lain.</li>
-            <li>Format file yang diterima adalah PNG atau JPG, maks. 25MB.</li>
-            <li>Keputusan juri bersifat mutlak dan tidak dapat diganggu gugat.</li>
+            <li>Artwork must be 100% original and never published before.</li>
+            <li>Judges can disqualify entries for plagiarism or copyright infringement.</li>
+            <li>Accepted formats are PNG or JPG, max size 25MB.</li>
+            <li>The judges' decisions are final and cannot be contested.</li>
         </ul>
     ),
   },
   {
     icon: ClipboardCheck,
-    title: "Kriteria Penilaian",
+    title: "Judging Criteria",
     content: (
         <ul className="list-disc pl-5 space-y-1">
-            <li>Kesesuaian desain dengan tema</li>
-            <li>Tata letak (Layout)</li>
-            <li>Penggunaan font dan warna</li>
-            <li>Isi/konten informatif dari poster</li>
+            <li>Alignment with the theme</li>
+            <li>Layout and composition</li>
+            <li>Typography and color usage</li>
+            <li>Clarity and impact of the content</li>
         </ul>
     ),
   },
@@ -48,24 +48,24 @@ const infoItems = [
 
 export function ContestInfo() {
   return (
-    <section id="info" className="space-y-12 section-padding container">
+    <section id="info" className="space-y-16 section-padding container">
         <div className="text-center">
-            <h2 className="text-3xl font-bold font-headline text-primary">Informasi Lomba</h2>
-            <p className="text-muted-foreground mt-2">Semua yang perlu kamu ketahui untuk berpartisipasi.</p>
+            <h2 className="text-4xl font-bold font-headline text-primary">Contest Information</h2>
+            <p className="text-muted-foreground mt-3 max-w-2xl mx-auto">Everything you need to know to participate and win.</p>
         </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid md:grid-cols-2 gap-8">
             {infoItems.map((item, index) => (
-                <Card key={index} className="flex flex-col bg-transparent border-0 shadow-none">
-                    <CardHeader className="flex flex-row items-center gap-4 p-0">
-                        <div className="bg-primary/10 p-3 rounded-full">
-                            <item.icon className="w-6 h-6 text-primary" />
+                <div key={index} className="flex items-start gap-6">
+                    <div className="bg-card/80 p-4 rounded-lg border border-primary/20">
+                        <item.icon className="w-8 h-8 text-primary" />
+                    </div>
+                    <div>
+                        <h3 className="font-headline text-xl font-semibold mb-2">{item.title}</h3>
+                        <div className="text-muted-foreground leading-relaxed">
+                            {item.content}
                         </div>
-                        <CardTitle className="font-headline text-xl">{item.title}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="text-muted-foreground flex-grow pt-4 pl-16">
-                        {item.content}
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
             ))}
         </div>
     </section>

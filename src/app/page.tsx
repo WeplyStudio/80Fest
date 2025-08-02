@@ -12,35 +12,32 @@ export default async function Home() {
   const isSubmissionOpen = await getSubmissionStatus();
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-24">
       <section id="hero" className="text-center section-padding">
-        <h1 className="text-5xl md:text-7xl font-bold font-headline text-primary">
-          80Fest 2025
+        <h1 className="text-5xl md:text-7xl font-bold font-headline text-transparent bg-clip-text bg-gradient-to-r from-primary via-green-400 to-green-200">
+          80Fest Poster Contest
         </h1>
-        <p className="mt-4 text-lg md:text-xl max-w-3xl mx-auto text-muted-foreground">
-          Tunjukkan bakat desainmu dalam lomba poster infografis tahun ini!
-          Jadilah bagian dari perayaan kreativitas dan inovasi.
+        <p className="mt-6 text-lg md:text-xl max-w-3xl mx-auto text-muted-foreground">
+          Showcase your design talent in this year's infographic poster competition. Be part of the celebration of creativity and innovation.
         </p>
-        <div className="mt-8">
+        <div className="mt-10">
           {isSubmissionOpen ? (
-            <Button size="lg" asChild className="bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg shadow-accent/20">
+            <Button size="lg" asChild className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20 transition-transform hover:scale-105">
               <Link href="/submit">
                 <Upload className="mr-2" />
-                Upload Karya Sekarang
+                Submit Your Artwork
               </Link>
             </Button>
           ) : (
              <Button size="lg" disabled>
                 <XCircle className="mr-2" />
-                Pendaftaran Telah Ditutup
+                Submission Closed
               </Button>
           )}
         </div>
       </section>
 
-      <div className="bg-secondary/50">
-        <ContestInfo />
-      </div>
+      <ContestInfo />
 
       <Gallery artworks={galleryArtworks} />
     </div>

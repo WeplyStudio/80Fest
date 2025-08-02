@@ -160,17 +160,17 @@ export default function SubmitPage() {
   }
   
   if (submissionStatus === null) {
-      return <div className="space-y-4">
+      return <div className="space-y-4 max-w-4xl mx-auto">
         <Skeleton className="h-10 w-1/3" />
         <Skeleton className="h-4 w-2/3" />
-        <Card>
+        <Card className="bg-card/50">
             <CardHeader><Skeleton className="h-6 w-1/4" /></CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
                 <Skeleton className="h-10 w-full" />
                 <Skeleton className="h-10 w-full" />
                 <Skeleton className="h-20 w-full" />
                 <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-10 w-1/4 self-end" />
+                <Skeleton className="h-10 w-1/4 ml-auto" />
             </CardContent>
         </Card>
       </div>
@@ -178,10 +178,10 @@ export default function SubmitPage() {
   
   if (step === "closed") {
        return (
-        <div className="text-center py-16">
-            <h1 className="text-3xl font-bold font-headline">Pendaftaran Ditutup</h1>
-            <p className="text-muted-foreground mt-2">Maaf, waktu untuk mengunggah karya telah berakhir.</p>
-            <Button asChild className="mt-6">
+        <div className="text-center py-20">
+            <h1 className="text-4xl font-bold font-headline">Pendaftaran Ditutup</h1>
+            <p className="text-muted-foreground mt-4">Maaf, waktu untuk mengunggah karya telah berakhir.</p>
+            <Button asChild className="mt-8">
                 <Link href="/">Kembali ke Beranda</Link>
             </Button>
         </div>
@@ -194,34 +194,34 @@ export default function SubmitPage() {
     <div className="max-w-4xl mx-auto">
       {step !== "preview" ? (
          <>
-            <h1 className="text-3xl font-bold font-headline">Upload Karyamu</h1>
+            <h1 className="text-4xl font-bold font-headline">Submit Your Artwork</h1>
             <p className="text-muted-foreground mt-2">
-                Isi data dirimu dan unggah poster infografis terbaikmu.
+                Fill in your details and upload your best infographic poster.
             </p>
          </>
       ) : (
          <>
-            <h1 className="text-3xl font-bold font-headline">Pratinjau Karyamu</h1>
+            <h1 className="text-4xl font-bold font-headline">Preview Your Submission</h1>
             <p className="text-muted-foreground mt-2">
-                Periksa kembali semua data dengan teliti sebelum mengirimkan karyamu.
+                Carefully check all the details before submitting your work.
             </p>
          </>
       )}
 
-      <Card className="mt-8">
+      <Card className="mt-10 bg-card/50 border-border/50">
         <FormProvider {...form}>
           <form onSubmit={form.handleSubmit(handlePreview)}>
             <div className={step === "form" ? "block" : "hidden"}>
-              <CardContent className="pt-6 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <CardContent className="pt-6 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField
                     control={form.control}
                     name="name"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Nama Lengkap</FormLabel>
+                        <FormLabel>Full Name</FormLabel>
                         <FormControl>
-                            <Input placeholder="John Doe" {...field} />
+                            <Input placeholder="e.g. John Doe" {...field} />
                         </FormControl>
                         <FormMessage />
                         </FormItem>
@@ -232,11 +232,11 @@ export default function SubmitPage() {
                     name="class"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Kelas</FormLabel>
+                        <FormLabel>Class</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Pilih kelas" />
+                                    <SelectValue placeholder="Select your class" />
                                 </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -253,9 +253,9 @@ export default function SubmitPage() {
                 name="title"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Judul Karya</FormLabel>
+                    <FormLabel>Artwork Title</FormLabel>
                     <FormControl>
-                        <Input placeholder="Inovasi Masa Depan" {...field} />
+                        <Input placeholder="e.g. Innovation of the Future" {...field} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
@@ -266,10 +266,10 @@ export default function SubmitPage() {
                 name="description"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Deskripsi Singkat</FormLabel>
+                    <FormLabel>Short Description</FormLabel>
                     <FormControl>
                         <Textarea
-                        placeholder="Ceritakan sedikit tentang karyamu..."
+                        placeholder="Tell us a little about your artwork..."
                         className="resize-none"
                         {...field}
                         />
@@ -283,7 +283,7 @@ export default function SubmitPage() {
                 name="artworkFile"
                 render={({ field: { onChange, value, ...rest } }) => (
                     <FormItem>
-                    <FormLabel>File Poster (PNG/JPG, maks {MAX_FILE_SIZE_MB}MB)</FormLabel>
+                    <FormLabel>Poster File (PNG/JPG, max {MAX_FILE_SIZE_MB}MB)</FormLabel>
                     <FormControl>
                         <Input
                         type="file"
@@ -297,10 +297,10 @@ export default function SubmitPage() {
                 )}
                 />
               </CardContent>
-              <CardContent className="flex justify-end">
+              <CardContent className="flex justify-end pt-2">
                 <Button type="submit">
                   <Eye className="mr-2" />
-                  Lihat Pratinjau
+                  Preview Submission
                 </Button>
               </CardContent>
             </div>
@@ -308,10 +308,10 @@ export default function SubmitPage() {
         </FormProvider>
         
         {step !== "form" && (
-             <CardContent className="pt-6 space-y-6">
+             <CardContent className="pt-6 space-y-8">
                 <div className="grid md:grid-cols-2 gap-8 items-start">
                     {previewUrl ? (
-                         <div className="aspect-[3/4] w-full relative rounded-md overflow-hidden bg-muted border">
+                         <div className="aspect-[3/4] w-full relative rounded-lg overflow-hidden bg-muted/30 border border-dashed">
                             <Image
                                 src={previewUrl}
                                 alt="Pratinjau Karya"
@@ -320,47 +320,47 @@ export default function SubmitPage() {
                             />
                         </div>
                     ): (
-                        <div className="aspect-[3/4] w-full bg-muted rounded-md flex items-center justify-center">
-                            <p className="text-muted-foreground">Gagal memuat pratinjau</p>
+                        <div className="aspect-[3/4] w-full bg-muted/30 rounded-lg flex items-center justify-center border-dashed">
+                            <p className="text-muted-foreground">Failed to load preview</p>
                         </div>
                     )}
                    
-                    <div className="space-y-4">
+                    <div className="space-y-6">
                          <div>
-                            <h3 className="text-sm font-medium text-muted-foreground">Judul Karya</h3>
+                            <h3 className="text-sm font-medium text-muted-foreground">Artwork Title</h3>
                             <p className="font-semibold text-lg">{formData.title}</p>
                         </div>
                          <div>
-                            <h3 className="text-sm font-medium text-muted-foreground">Peserta</h3>
-                            <p className="font-semibold">{formData.name} ({formData.class})</p>
+                            <h3 className="text-sm font-medium text-muted-foreground">Participant</h3>
+                            <p className="font-semibold">{formData.name} (Class {formData.class})</p>
                         </div>
                          <div>
-                            <h3 className="text-sm font-medium text-muted-foreground">Deskripsi</h3>
-                            <p className="text-sm">{formData.description}</p>
+                            <h3 className="text-sm font-medium text-muted-foreground">Description</h3>
+                            <p className="text-sm leading-relaxed">{formData.description}</p>
                         </div>
                          <div>
-                            <h3 className="text-sm font-medium text-muted-foreground">Nama File</h3>
-                            <p className="text-sm">{formData.artworkFile?.[0]?.name}</p>
+                            <h3 className="text-sm font-medium text-muted-foreground">Filename</h3>
+                            <p className="text-sm text-muted-foreground">{formData.artworkFile?.[0]?.name}</p>
                         </div>
                     </div>
                 </div>
-                <div className="flex flex-col-reverse sm:flex-col gap-4 sm:flex-row-reverse sm:justify-between items-center">
-                    <Button onClick={onFinalSubmit} disabled={step === 'submitting'} className="bg-accent text-accent-foreground hover:bg-accent/90 w-full sm:w-auto">
+                <div className="flex flex-col-reverse sm:flex-row-reverse sm:justify-between items-center gap-4">
+                    <Button onClick={onFinalSubmit} disabled={step === 'submitting'} className="bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto shadow-lg shadow-primary/20">
                         {step === 'submitting' ? (
                             <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Mengirim...
+                                Submitting...
                             </>
                         ) : (
                             <>
                                 <Send className="mr-2" />
-                                Konfirmasi & Kirim Karyaku
+                                Confirm & Submit
                             </>
                         )}
                     </Button>
                     <Button variant="outline" onClick={handleBackToForm} disabled={step === 'submitting'} className="w-full sm:w-auto">
                         <ArrowLeft className="mr-2" />
-                        Kembali & Edit
+                        Back & Edit
                     </Button>
                 </div>
             </CardContent>

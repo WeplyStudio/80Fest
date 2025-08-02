@@ -6,7 +6,7 @@ import Image from "next/image";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import type { Artwork } from "@/lib/types";
-import { Camera } from "lucide-react";
+import { Camera, MessageCircle } from "lucide-react";
 import { CommentSection } from "./comment-section";
 
 interface GalleryProps {
@@ -27,24 +27,24 @@ export function Gallery({ artworks: initialArtworks }: GalleryProps) {
   return (
     <section id="gallery" className="space-y-12 section-padding">
       <div className="text-center">
-        <h2 className="text-3xl font-bold font-headline text-primary">Galeri Karya</h2>
-        <p className="text-muted-foreground mt-2">Lihat karya-karya luar biasa dari para peserta pilihan.</p>
+        <h2 className="text-4xl font-bold font-headline text-primary">Artwork Gallery</h2>
+        <p className="text-muted-foreground mt-3 max-w-2xl mx-auto">Explore the incredible works from our talented participants. Click on any artwork to see details.</p>
       </div>
        {artworks.length === 0 ? (
-        <div className="text-center py-16 border-2 border-dashed rounded-lg">
+        <div className="text-center py-20 border-2 border-dashed border-border/50 rounded-xl bg-card/50">
             <Camera className="mx-auto h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-4 text-lg font-medium">Galeri Masih Kosong</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-                Karya-karya pilihan akan ditampilkan di sini setelah proses kurasi.
+            <h3 className="mt-6 text-xl font-medium">Gallery is Currently Empty</h3>
+            <p className="mt-2 text-base text-muted-foreground">
+                Selected artworks will be displayed here after the curation process.
             </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
             {artworks.map((artwork) => {
               const currentArtwork = findArtworkById(artwork.id) || artwork;
               return (
                 <Dialog key={artwork.id}>
-                    <Card className="overflow-hidden flex flex-col group transition-all hover:shadow-xl hover:-translate-y-1 bg-card/80 backdrop-blur-sm">
+                    <Card className="overflow-hidden flex flex-col group transition-all duration-300 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2 bg-card border-border/50">
                         <DialogTrigger asChild>
                             <div className="p-0 cursor-pointer">
                                 <div className="aspect-[3/4] relative">
@@ -52,14 +52,17 @@ export function Gallery({ artworks: initialArtworks }: GalleryProps) {
                                     src={artwork.imageUrl}
                                     alt={artwork.title}
                                     fill
-                                    className="object-cover transition-transform group-hover:scale-105"
+                                    className="object-cover transition-transform duration-300 group-hover:scale-105"
                                     />
+                                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-100 group-hover:opacity-100" />
                                 </div>
                             </div>
                         </DialogTrigger>
-                        <CardContent className="p-4 flex-grow">
-                            <CardTitle className="font-headline text-lg truncate group-hover:text-primary">{artwork.title}</CardTitle>
-                            <p className="text-sm text-muted-foreground">{artwork.name} - {artwork.class}</p>
+                        <CardContent className="p-4 flex-grow flex flex-col justify-between">
+                           <div>
+                             <CardTitle className="font-headline text-lg mb-1 truncate group-hover:text-primary">{artwork.title}</CardTitle>
+                             <p className="text-sm text-muted-foreground">{artwork.name} - {artwork.class}</p>
+                           </div>
                         </CardContent>
                     </Card>
                     <DialogContent className="max-w-4xl w-full">
@@ -78,10 +81,13 @@ export function Gallery({ artworks: initialArtworks }: GalleryProps) {
                         </div>
                         <div className="flex flex-col gap-4">
                             <div>
-                                <h3 className="font-semibold font-headline mb-2">Deskripsi Karya</h3>
-                                <p className="text-muted-foreground text-sm">{currentArtwork.description}</p>
+                                <h3 className="font-semibold font-headline mb-2">Artwork Description</h3>
+                                <p className="text-muted-foreground text-sm leading-relaxed">{currentArtwork.description}</p>
                             </div>
-                            <CommentSection artwork={currentArtwork} onArtworkUpdate={handleArtworkUpdate} />
+                            <div className="text-center py-8 text-muted-foreground text-sm rounded-lg bg-card/50 mt-4">
+                                 <MessageCircle className="mx-auto h-8 w-8 mb-2" />
+                                <p>Comments are disabled for this contest.</p>
+                            </div>
                         </div>
                     </div>
                     </DialogContent>
