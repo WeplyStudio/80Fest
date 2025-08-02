@@ -9,8 +9,8 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/s
 import { Menu, Sparkles } from "lucide-react";
 
 const navLinks = [
-  { href: "/", label: "Home" },
-  { href: "/leaderboard", label: "Leaderboard" },
+  { href: "/", label: "Beranda" },
+  { href: "/leaderboard", label: "Peringkat" },
   { href: "/admin", label: "Admin" },
 ];
 
@@ -48,11 +48,11 @@ export function Header() {
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon">
                 <Menu className="h-6 w-6" />
-                <span className="sr-only">Toggle Menu</span>
+                <span className="sr-only">Buka Menu</span>
               </Button>
             </SheetTrigger>
             <SheetContent side="right">
-              <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+              <SheetTitle className="sr-only">Menu Navigasi</SheetTitle>
               <nav className="flex flex-col space-y-4 mt-12">
                 {renderNavLinks(true)}
               </nav>

@@ -7,7 +7,6 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import type { Artwork } from "@/lib/types";
 import { Camera, MessageCircle } from "lucide-react";
-import { CommentSection } from "./comment-section";
 
 interface GalleryProps {
   artworks: Artwork[];
@@ -27,15 +26,15 @@ export function Gallery({ artworks: initialArtworks }: GalleryProps) {
   return (
     <section id="gallery" className="space-y-12 section-padding">
       <div className="text-center">
-        <h2 className="text-4xl font-bold font-headline text-primary">Artwork Gallery</h2>
-        <p className="text-muted-foreground mt-3 max-w-2xl mx-auto">Explore the incredible works from our talented participants. Click on any artwork to see details.</p>
+        <h2 className="text-4xl font-bold font-headline text-primary">Galeri Karya</h2>
+        <p className="text-muted-foreground mt-3 max-w-2xl mx-auto">Jelajahi karya-karya luar biasa dari para peserta berbakat kami. Klik pada karya mana pun untuk melihat detailnya.</p>
       </div>
        {artworks.length === 0 ? (
         <div className="text-center py-20 border-2 border-dashed border-border/50 rounded-xl bg-card/50">
             <Camera className="mx-auto h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-6 text-xl font-medium">Gallery is Currently Empty</h3>
+            <h3 className="mt-6 text-xl font-medium">Galeri Saat Ini Kosong</h3>
             <p className="mt-2 text-base text-muted-foreground">
-                Selected artworks will be displayed here after the curation process.
+                Karya-karya terpilih akan ditampilkan di sini setelah proses kurasi.
             </p>
         </div>
       ) : (
@@ -81,12 +80,12 @@ export function Gallery({ artworks: initialArtworks }: GalleryProps) {
                         </div>
                         <div className="flex flex-col gap-4">
                             <div>
-                                <h3 className="font-semibold font-headline mb-2">Artwork Description</h3>
+                                <h3 className="font-semibold font-headline mb-2">Deskripsi Karya</h3>
                                 <p className="text-muted-foreground text-sm leading-relaxed">{currentArtwork.description}</p>
                             </div>
                             <div className="text-center py-8 text-muted-foreground text-sm rounded-lg bg-card/50 mt-4">
                                  <MessageCircle className="mx-auto h-8 w-8 mb-2" />
-                                <p>Comments are disabled for this contest.</p>
+                                <p>Komentar dinonaktifkan untuk kontes ini.</p>
                             </div>
                         </div>
                     </div>

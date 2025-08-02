@@ -30,7 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Eye, MoreHorizontal, Trash, GalleryVertical, GalleryVerticalEnd, Pencil, Star, Users, Layers } from "lucide-react";
+import { Eye, MoreHorizontal, Trash, GalleryVertical, GalleryVerticalEnd, Pencil, Star, Users, Layers, MessageCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -49,7 +49,6 @@ import { Switch } from "./ui/switch";
 import { Input } from "./ui/input";
 import { EditArtworkDialog } from "./edit-artwork-dialog";
 import { GivePointsDialog } from "./give-points-dialog";
-import { CommentSection } from "./comment-section";
 import React from "react";
 
 
@@ -143,7 +142,7 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLe
     if (result.success) {
         setLeaderboardVisible(result.newState);
         toast({
-            title: `Leaderboard ${result.newState ? "Ditampilkan" : "Disembunyikan"}`,
+            title: `Papan Peringkat ${result.newState ? "Ditampilkan" : "Disembunyikan"}`,
             description: `Hasil akhir sekarang ${result.newState ? "bisa" : "tidak bisa"} dilihat publik.`,
         });
     } else {
@@ -161,7 +160,7 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLe
       <div>
         <h1 className="text-3xl font-bold font-headline">Dasbor Admin</h1>
         <p className="text-muted-foreground">
-          Kelola semua karya yang telah di-upload oleh peserta dan atur pendaftaran.
+          Kelola semua karya yang telah diunggah oleh peserta dan atur pendaftaran.
         </p>
       </div>
       
@@ -213,7 +212,7 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLe
       <Card>
         <CardHeader>
             <CardTitle className="font-headline">Pengaturan Lomba</CardTitle>
-            <CardDescription>Atur status pendaftaran dan visibilitas leaderboard.</CardDescription>
+            <CardDescription>Atur status pendaftaran dan visibilitas papan peringkat.</CardDescription>
         </CardHeader>
         <CardContent className="grid sm:grid-cols-2 gap-4">
             <div className="flex items-center space-x-4 rounded-md border p-4">
@@ -231,9 +230,9 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLe
             </div>
              <div className="flex items-center space-x-4 rounded-md border p-4">
                 <div className="flex-1 space-y-1">
-                    <p className="text-sm font-medium leading-none">Tampilkan Leaderboard</p>
+                    <p className="text-sm font-medium leading-none">Tampilkan Papan Peringkat</p>
                     <p className="text-sm text-muted-foreground">
-                        Jika aktif, hasil akhir akan tampil di halaman leaderboard.
+                        Jika aktif, hasil akhir akan tampil di halaman papan peringkat.
                     </p>
                 </div>
                  <Switch
@@ -348,7 +347,10 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLe
                                     <h3 className="font-semibold font-headline mb-2">Rincian Poin</h3>
                                     <ScoreTable scores={artwork.scores || []} totalPoints={artwork.totalPoints || 0} />
                                   </div>
-                                  <CommentSection artwork={artwork} onArtworkUpdate={handleUpdateArtworkState}/>
+                                   <div className="text-center py-8 text-muted-foreground text-sm rounded-lg bg-card/50 mt-4">
+                                        <MessageCircle className="mx-auto h-8 w-8 mb-2" />
+                                       <p>Komentar dinonaktifkan untuk kontes ini.</p>
+                                   </div>
                               </div>
                           </div>
                         </DialogContent>

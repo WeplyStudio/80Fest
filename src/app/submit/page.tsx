@@ -28,7 +28,7 @@ import Link from "next/link";
 import imageCompression from 'browser-image-compression';
 
 const classes = ["VII", "VIII", "IX"] as const;
-const MAX_FILE_SIZE_MB = 10;
+const MAX_FILE_SIZE_MB = 32;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 const submissionSchema = z.object({
@@ -145,14 +145,14 @@ export default function SubmitPage() {
 
     if (result.success) {
       toast({
-        title: "Karya Berhasil Diupload!",
+        title: "Karya Berhasil Diunggah!",
         description: "Terima kasih atas partisipasimu. Karyamu akan segera ditinjau oleh admin.",
       });
       router.push("/submit/thank-you");
     } else {
       toast({
         variant: "destructive",
-        title: "Gagal Upload Karya",
+        title: "Gagal Mengunggah Karya",
         description: result.message || "Terjadi kesalahan. Silakan coba lagi.",
       });
       setStep("preview"); // Return to preview on error
@@ -194,16 +194,16 @@ export default function SubmitPage() {
     <div className="max-w-4xl mx-auto">
       {step !== "preview" ? (
          <>
-            <h1 className="text-4xl font-bold font-headline">Submit Your Artwork</h1>
+            <h1 className="text-4xl font-bold font-headline">Kirim Karya Anda</h1>
             <p className="text-muted-foreground mt-2">
-                Fill in your details and upload your best infographic poster.
+                Isi detail Anda dan unggah poster infografis terbaik Anda.
             </p>
          </>
       ) : (
          <>
-            <h1 className="text-4xl font-bold font-headline">Preview Your Submission</h1>
+            <h1 className="text-4xl font-bold font-headline">Pratinjau Pengiriman Anda</h1>
             <p className="text-muted-foreground mt-2">
-                Carefully check all the details before submitting your work.
+                Periksa kembali semua detail dengan teliti sebelum mengirimkan karya Anda.
             </p>
          </>
       )}
@@ -219,9 +219,9 @@ export default function SubmitPage() {
                     name="name"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Full Name</FormLabel>
+                        <FormLabel>Nama Lengkap</FormLabel>
                         <FormControl>
-                            <Input placeholder="e.g. John Doe" {...field} />
+                            <Input placeholder="contoh: Budi Sanjaya" {...field} />
                         </FormControl>
                         <FormMessage />
                         </FormItem>
@@ -232,11 +232,11 @@ export default function SubmitPage() {
                     name="class"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Class</FormLabel>
+                        <FormLabel>Kelas</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Select your class" />
+                                    <SelectValue placeholder="Pilih kelas Anda" />
                                 </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -253,9 +253,9 @@ export default function SubmitPage() {
                 name="title"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Artwork Title</FormLabel>
+                    <FormLabel>Judul Karya</FormLabel>
                     <FormControl>
-                        <Input placeholder="e.g. Innovation of the Future" {...field} />
+                        <Input placeholder="contoh: Inovasi Masa Depan" {...field} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
@@ -266,10 +266,10 @@ export default function SubmitPage() {
                 name="description"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Short Description</FormLabel>
+                    <FormLabel>Deskripsi Singkat</FormLabel>
                     <FormControl>
                         <Textarea
-                        placeholder="Tell us a little about your artwork..."
+                        placeholder="Ceritakan sedikit tentang karya Anda..."
                         className="resize-none"
                         {...field}
                         />
@@ -283,7 +283,7 @@ export default function SubmitPage() {
                 name="artworkFile"
                 render={({ field: { onChange, value, ...rest } }) => (
                     <FormItem>
-                    <FormLabel>Poster File (PNG/JPG, max {MAX_FILE_SIZE_MB}MB)</FormLabel>
+                    <FormLabel>File Poster (PNG/JPG, maks {MAX_FILE_SIZE_MB}MB)</FormLabel>
                     <FormControl>
                         <Input
                         type="file"
@@ -300,7 +300,7 @@ export default function SubmitPage() {
               <CardContent className="flex justify-end pt-2">
                 <Button type="submit">
                   <Eye className="mr-2" />
-                  Preview Submission
+                  Tinjau Pengiriman
                 </Button>
               </CardContent>
             </div>
@@ -321,25 +321,25 @@ export default function SubmitPage() {
                         </div>
                     ): (
                         <div className="aspect-[3/4] w-full bg-muted/30 rounded-lg flex items-center justify-center border-dashed">
-                            <p className="text-muted-foreground">Failed to load preview</p>
+                            <p className="text-muted-foreground">Gagal memuat pratinjau</p>
                         </div>
                     )}
                    
                     <div className="space-y-6">
                          <div>
-                            <h3 className="text-sm font-medium text-muted-foreground">Artwork Title</h3>
+                            <h3 className="text-sm font-medium text-muted-foreground">Judul Karya</h3>
                             <p className="font-semibold text-lg">{formData.title}</p>
                         </div>
                          <div>
-                            <h3 className="text-sm font-medium text-muted-foreground">Participant</h3>
-                            <p className="font-semibold">{formData.name} (Class {formData.class})</p>
+                            <h3 className="text-sm font-medium text-muted-foreground">Peserta</h3>
+                            <p className="font-semibold">{formData.name} (Kelas {formData.class})</p>
                         </div>
                          <div>
-                            <h3 className="text-sm font-medium text-muted-foreground">Description</h3>
+                            <h3 className="text-sm font-medium text-muted-foreground">Deskripsi</h3>
                             <p className="text-sm leading-relaxed">{formData.description}</p>
                         </div>
                          <div>
-                            <h3 className="text-sm font-medium text-muted-foreground">Filename</h3>
+                            <h3 className="text-sm font-medium text-muted-foreground">Nama File</h3>
                             <p className="text-sm text-muted-foreground">{formData.artworkFile?.[0]?.name}</p>
                         </div>
                     </div>
@@ -349,18 +349,18 @@ export default function SubmitPage() {
                         {step === 'submitting' ? (
                             <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Submitting...
+                                Mengirim...
                             </>
                         ) : (
                             <>
                                 <Send className="mr-2" />
-                                Confirm & Submit
+                                Konfirmasi & Kirim
                             </>
                         )}
                     </Button>
                     <Button variant="outline" onClick={handleBackToForm} disabled={step === 'submitting'} className="w-full sm:w-auto">
                         <ArrowLeft className="mr-2" />
-                        Back & Edit
+                        Kembali & Edit
                     </Button>
                 </div>
             </CardContent>

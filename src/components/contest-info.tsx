@@ -5,41 +5,41 @@ import { Calendar, Palette, ScrollText, ClipboardCheck } from "lucide-react";
 const infoItems = [
   {
     icon: Palette,
-    title: "Poster Theme",
-    content: "Dirgahayu republik indonesia ke 80: Bersatu Berdaulat Rakyat Sejahtera Indonesia Maju",
+    title: "Tema Poster",
+    content: "Dirgahayu Republik Indonesia ke-80: Bersatu Berdaulat Rakyat Sejahtera Indonesia Maju",
   },
   {
     icon: Calendar,
-    title: "Important Dates",
+    title: "Tanggal Penting",
     content: (
         <ul className="list-disc pl-5 space-y-1">
-            <li><strong>Submission:</strong> August 6 - 8, 2025</li>
-            <li><strong>Judging Period:</strong> August 8, 2025</li>
-            <li><strong>Winner Announcement:</strong> August 9, 2025</li>
+            <li><strong>Pengumpulan:</strong> 6 - 8 Agustus 2025</li>
+            <li><strong>Periode Penjurian:</strong> 8 Agustus 2025</li>
+            <li><strong>Pengumuman Pemenang:</strong> 9 Agustus 2025</li>
         </ul>
     ),
   },
   {
     icon: ScrollText,
-    title: "General Rules",
+    title: "Ketentuan Umum",
     content: (
         <ul className="list-disc pl-5 space-y-1">
-            <li>Artwork must be 100% original and never published before.</li>
-            <li>Judges can disqualify entries for plagiarism or copyright infringement.</li>
-            <li>Accepted formats are PNG or JPG, max size 25MB.</li>
-            <li>The judges' decisions are final and cannot be contested.</li>
+            <li>Karya harus 100% orisinal dan belum pernah dipublikasikan sebelumnya.</li>
+            <li>Juri dapat mendiskualifikasi karya karena plagiarisme atau pelanggaran hak cipta.</li>
+            <li>Format yang diterima adalah PNG atau JPG, ukuran maksimal 32MB.</li>
+            <li>Keputusan juri bersifat final dan tidak dapat diganggu gugat.</li>
         </ul>
     ),
   },
   {
     icon: ClipboardCheck,
-    title: "Judging Criteria",
+    title: "Kriteria Penilaian",
     content: (
         <ul className="list-disc pl-5 space-y-1">
-            <li>Alignment with the theme</li>
-            <li>Layout and composition</li>
-            <li>Typography and color usage</li>
-            <li>Clarity and impact of the content</li>
+            <li>Kesesuaian dengan tema</li>
+            <li>Tata letak dan komposisi</li>
+            <li>Penggunaan tipografi dan warna</li>
+            <li>Kejelasan dan dampak konten</li>
         </ul>
     ),
   },
@@ -50,8 +50,8 @@ export function ContestInfo() {
   return (
     <section id="info" className="space-y-16 section-padding container">
         <div className="text-center">
-            <h2 className="text-4xl font-bold font-headline text-primary">Contest Information</h2>
-            <p className="text-muted-foreground mt-3 max-w-2xl mx-auto">Everything you need to know to participate and win.</p>
+            <h2 className="text-4xl font-bold font-headline text-primary">Informasi Lomba</h2>
+            <p className="text-muted-foreground mt-3 max-w-2xl mx-auto">Semua yang perlu Anda ketahui untuk berpartisipasi dan menang.</p>
         </div>
         <div className="grid md:grid-cols-2 gap-8">
             {infoItems.map((item, index) => (

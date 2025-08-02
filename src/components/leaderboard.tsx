@@ -16,7 +16,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { CommentSection } from './comment-section';
 import React from 'react';
 
 interface LeaderboardProps {
@@ -28,19 +27,19 @@ const winnerStyles: { [key: number]: { card: string; iconColor: string; bgColor:
     card: 'border-yellow-400/50 shadow-yellow-500/10 shadow-2xl bg-gradient-to-br from-card to-yellow-500/5',
     iconColor: 'text-yellow-400',
     bgColor: 'bg-yellow-400/10',
-    label: '1st Place',
+    label: 'Juara 1',
   },
   2: {
     card: 'border-gray-400/50 shadow-gray-500/10 shadow-lg bg-gradient-to-br from-card to-gray-500/5',
     iconColor: 'text-gray-400',
     bgColor: 'bg-gray-400/10',
-    label: '2nd Place',
+    label: 'Juara 2',
   },
   3: {
     card: 'border-amber-600/50 shadow-amber-600/10 shadow-lg bg-gradient-to-br from-card to-amber-600/5',
     iconColor: 'text-amber-600',
     bgColor: 'bg-amber-600/10',
-    label: '3rd Place',
+    label: 'Juara 3',
   },
 };
 
@@ -59,9 +58,9 @@ export function Leaderboard({ rankedArtworks: initialArtworks }: LeaderboardProp
     return (
       <div className="text-center py-20 border-2 border-dashed border-border/50 rounded-xl bg-card/50">
         <Trophy className="mx-auto h-12 w-12 text-muted-foreground" />
-        <h3 className="mt-6 text-xl font-medium">No Artworks Rated Yet</h3>
+        <h3 className="mt-6 text-xl font-medium">Belum Ada Karya yang Dinilai</h3>
         <p className="mt-2 text-base text-muted-foreground">
-          The leaderboard will appear here once the judging process begins.
+          Papan peringkat akan muncul di sini setelah proses penjurian dimulai.
         </p>
       </div>
     );
@@ -112,7 +111,7 @@ function WinnerCard({ artwork, rank, onArtworkUpdate, findArtworkById }: WinnerC
             </CardHeader>
             <CardContent className="p-0 pt-4">
                 <h3 className="font-semibold text-base">{currentArtwork.name}</h3>
-                <p className="text-sm text-muted-foreground mb-4">Class {currentArtwork.class}</p>
+                <p className="text-sm text-muted-foreground mb-4">Kelas {currentArtwork.class}</p>
                  <DialogTrigger asChild>
                   <div className="aspect-[3/4] relative rounded-lg overflow-hidden cursor-pointer group">
                       <Image
@@ -122,7 +121,7 @@ function WinnerCard({ artwork, rank, onArtworkUpdate, findArtworkById }: WinnerC
                           className="object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                       <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <p className="text-white font-semibold">View Details</p>
+                        <p className="text-white font-semibold">Lihat Detail</p>
                       </div>
                   </div>
                 </DialogTrigger>
@@ -132,7 +131,7 @@ function WinnerCard({ artwork, rank, onArtworkUpdate, findArtworkById }: WinnerC
       <DialogContent className="max-w-4xl w-full">
           <DialogHeader>
               <DialogTitle className="font-headline text-2xl">{currentArtwork.title}</DialogTitle>
-              <DialogDescription>{currentArtwork.name} - Class {currentArtwork.class}</DialogDescription>
+              <DialogDescription>{currentArtwork.name} - Kelas {currentArtwork.class}</DialogDescription>
           </DialogHeader>
           <div className="grid md:grid-cols-2 gap-6 items-start">
               <div className="aspect-[3/4] w-full relative rounded-lg overflow-hidden bg-muted/30">
@@ -145,16 +144,16 @@ function WinnerCard({ artwork, rank, onArtworkUpdate, findArtworkById }: WinnerC
               </div>
               <div className="flex flex-col gap-4">
                   <div>
-                    <h3 className="font-semibold font-headline mb-2">Artwork Description</h3>
+                    <h3 className="font-semibold font-headline mb-2">Deskripsi Karya</h3>
                     <p className="text-muted-foreground mb-4 text-sm leading-relaxed">{currentArtwork.description}</p>
                   </div>
                   <div>
-                    <h3 className="font-semibold font-headline mb-2">Points Breakdown</h3>
+                    <h3 className="font-semibold font-headline mb-2">Rincian Poin</h3>
                     <ScoreTable scores={currentArtwork.scores || []} totalPoints={currentArtwork.totalPoints || 0} />
                   </div>
                    <div className="text-center py-8 text-muted-foreground text-sm rounded-lg bg-card/50 mt-4">
                         <MessageCircle className="mx-auto h-8 w-8 mb-2" />
-                       <p>Comments are disabled for this contest.</p>
+                       <p>Komentar dinonaktifkan untuk kontes ini.</p>
                    </div>
               </div>
           </div>
@@ -168,16 +167,16 @@ function OtherRanks({ artworks }: { artworks: Artwork[] }) {
     return (
         <Card className="bg-card/50">
             <CardHeader>
-                <CardTitle className="font-headline">Other Ranks</CardTitle>
+                <CardTitle className="font-headline">Peringkat Lainnya</CardTitle>
             </CardHeader>
             <CardContent>
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="w-[60px]">Rank</TableHead>
-                            <TableHead>Artwork Title</TableHead>
-                            <TableHead>Participant</TableHead>
-                            <TableHead className="text-right">Total Points</TableHead>
+                            <TableHead className="w-[60px]">Peringkat</TableHead>
+                            <TableHead>Judul Karya</TableHead>
+                            <TableHead>Peserta</TableHead>
+                            <TableHead className="text-right">Total Poin</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -202,9 +201,9 @@ function ScoreTable({ scores, totalPoints }: { scores: JudgeScore[], totalPoints
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead>Judge</TableHead>
-                        <TableHead>Criteria</TableHead>
-                        <TableHead className="text-right">Points</TableHead>
+                        <TableHead>Juri</TableHead>
+                        <TableHead>Kriteria</TableHead>
+                        <TableHead className="text-right">Poin</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -212,12 +211,12 @@ function ScoreTable({ scores, totalPoints }: { scores: JudgeScore[], totalPoints
                         <React.Fragment key={`${score.judgeName}-${scoreIndex}`}>
                             <TableRow>
                                 <TableCell rowSpan={5} className="font-medium align-top pt-4 text-base">{score.judgeName}</TableCell>
-                                <TableCell className="text-muted-foreground">Theme Alignment</TableCell>
+                                <TableCell className="text-muted-foreground">Kesesuaian Tema</TableCell>
                                 <TableCell className="text-right">{score.criteria.theme_match}</TableCell>
                             </TableRow>
-                            <TableRow><TableCell className="text-muted-foreground">Layout</TableCell><TableCell className="text-right">{score.criteria.layout}</TableCell></TableRow>
-                            <TableRow><TableCell className="text-muted-foreground">Typography & Color</TableCell><TableCell className="text-right">{score.criteria.typography_color}</TableCell></TableRow>
-                            <TableRow><TableCell className="text-muted-foreground">Content Clarity</TableCell><TableCell className="text-right">{score.criteria.content_clarity}</TableCell></TableRow>
+                            <TableRow><TableCell className="text-muted-foreground">Tata Letak</TableCell><TableCell className="text-right">{score.criteria.layout}</TableCell></TableRow>
+                            <TableRow><TableCell className="text-muted-foreground">Tipografi & Warna</TableCell><TableCell className="text-right">{score.criteria.typography_color}</TableCell></TableRow>
+                            <TableRow><TableCell className="text-muted-foreground">Kejelasan Konten</TableCell><TableCell className="text-right">{score.criteria.content_clarity}</TableCell></TableRow>
                             <TableRow className="bg-card/30">
                                 <TableCell className="font-semibold">Subtotal</TableCell>
                                 <TableCell className="text-right font-semibold">{score.totalScore}</TableCell>
@@ -226,7 +225,7 @@ function ScoreTable({ scores, totalPoints }: { scores: JudgeScore[], totalPoints
                     ))}
                     {scores.length > 0 && <TableRow><TableCell colSpan={3} className="p-0"><div className="h-px bg-border/50 w-full"></div></TableCell></TableRow>}
                     <TableRow className="bg-card/50 font-bold text-base">
-                        <TableCell colSpan={2}>Final Total</TableCell>
+                        <TableCell colSpan={2}>Total Akhir</TableCell>
                         <TableCell className="text-right text-lg text-primary">{totalPoints}</TableCell>
                     </TableRow>
                 </TableBody>

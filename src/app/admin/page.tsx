@@ -117,8 +117,8 @@ export default function AdminPage() {
           <div className="mx-auto bg-primary/10 p-3 rounded-full w-fit">
             <Lock className="w-8 h-8 text-primary" />
           </div>
-          <CardTitle className="font-headline mt-4">Admin Panel Login</CardTitle>
-          <CardDescription>Masukkan password untuk mengakses dasbor.</CardDescription>
+          <CardTitle className="font-headline mt-4">Login Panel Admin</CardTitle>
+          <CardDescription>Masukkan kata sandi untuk mengakses dasbor.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -128,7 +128,7 @@ export default function AdminPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel>Kata Sandi</FormLabel>
                     <FormControl>
                       <Input type="password" placeholder="••••••••" {...field} />
                     </FormControl>
@@ -137,7 +137,7 @@ export default function AdminPage() {
                 )}
               />
               <Button type="submit" className="w-full">
-                Login
+                Masuk
               </Button>
             </form>
           </Form>
@@ -146,4 +146,3 @@ export default function AdminPage() {
     </div>
   );
 }
-
