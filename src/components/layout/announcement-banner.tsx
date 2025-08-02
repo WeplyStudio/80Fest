@@ -13,7 +13,7 @@ export async function AnnouncementBanner() {
       <div className="container mx-auto flex items-center justify-center gap-3 px-4">
         <div className="flex items-center gap-2 bg-primary/20 text-primary px-3 py-1 rounded-full shadow-sm ring-1 ring-primary/30">
           <Megaphone className="h-4 w-4" />
-          <span className="text-sm font-medium leading-tight">{bannerData.text}</span>
+          <span className="text-center text-sm font-medium leading-tight">{bannerData.text}</span>
         </div>
       </div>
     </div>
