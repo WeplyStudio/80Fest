@@ -28,7 +28,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Eye, MoreHorizontal, Star, MessageCircle, CheckCircle } from "lucide-react";
+import { Eye, MoreHorizontal, Star, MessageCircle, CheckCircle, LogOut } from "lucide-react";
 import { Input } from "./ui/input";
 import { GivePointsDialog } from "./give-points-dialog";
 import React from "react";
@@ -37,9 +37,10 @@ import { Badge } from "./ui/badge";
 interface JudgePanelProps {
     initialArtworks: Artwork[];
     judgeName: string;
+    onLogout: () => void;
 }
 
-export function JudgePanel({ initialArtworks, judgeName }: JudgePanelProps) {
+export function JudgePanel({ initialArtworks, judgeName, onLogout }: JudgePanelProps) {
   const [artworks, setArtworks] = useState<Artwork[]>(initialArtworks);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -67,11 +68,17 @@ export function JudgePanel({ initialArtworks, judgeName }: JudgePanelProps) {
   
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold font-headline">Dasbor Juri</h1>
-        <p className="text-muted-foreground">
-          Selamat datang, Juri <span className="font-bold text-primary">{judgeName}</span>. Silakan nilai karya peserta.
-        </p>
+      <div className="flex justify-between items-start">
+        <div>
+            <h1 className="text-3xl font-bold font-headline">Dasbor Juri</h1>
+            <p className="text-muted-foreground">
+            Selamat datang, Juri <span className="font-bold text-primary">{judgeName}</span>. Silakan nilai karya peserta.
+            </p>
+        </div>
+        <Button variant="outline" onClick={onLogout}>
+            <LogOut className="mr-2" />
+            Logout
+        </Button>
       </div>
       
       <div className="space-y-4">

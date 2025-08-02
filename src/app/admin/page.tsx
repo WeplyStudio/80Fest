@@ -87,6 +87,16 @@ export default function AdminPage() {
       form.reset();
     }
   }
+  
+  function handleLogout() {
+    toast({ title: "Logout Berhasil" });
+    document.cookie = `${AUTH_COOKIE_NAME}=; path=/; max-age=0`;
+    setIsAuthenticated(false);
+    setArtworks(null);
+    setSubmissionStatus(null);
+    setLeaderboardStatus(null);
+    setLoading(false);
+  }
 
   if (isAuthenticated) {
      if (loading || !artworks || submissionStatus === null || leaderboardStatus === null) {
@@ -109,6 +119,7 @@ export default function AdminPage() {
         initialArtworks={artworks} 
         initialSubmissionStatus={submissionStatus} 
         initialLeaderboardStatus={leaderboardStatus} 
+        onLogout={handleLogout}
     />;
   }
 

@@ -89,6 +89,15 @@ export default function JudgePage() {
       form.reset();
     }
   }
+  
+  function handleLogout() {
+    toast({ title: "Logout Berhasil" });
+    document.cookie = `${AUTH_COOKIE_NAME}=; path=/; max-age=0`;
+    setIsAuthenticated(false);
+    setJudgeName(null);
+    setArtworks(null);
+    setLoading(false);
+  }
 
   if (isAuthenticated) {
      if (loading || !artworks || !judgeName) {
@@ -110,6 +119,7 @@ export default function JudgePage() {
     return <JudgePanel 
         initialArtworks={artworks} 
         judgeName={judgeName}
+        onLogout={handleLogout}
     />;
   }
 
@@ -149,4 +159,3 @@ export default function JudgePage() {
     </div>
   );
 }
-

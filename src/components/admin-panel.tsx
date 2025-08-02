@@ -30,7 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Eye, MoreHorizontal, Trash, GalleryVertical, GalleryVerticalEnd, Pencil, Star, Users, Layers, MessageCircle } from "lucide-react";
+import { Eye, MoreHorizontal, Trash, GalleryVertical, GalleryVerticalEnd, Pencil, Star, Users, Layers, MessageCircle, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -55,9 +55,10 @@ interface AdminPanelProps {
     initialArtworks: Artwork[];
     initialSubmissionStatus: boolean;
     initialLeaderboardStatus: boolean;
+    onLogout: () => void;
 }
 
-export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLeaderboardStatus }: AdminPanelProps) {
+export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLeaderboardStatus, onLogout }: AdminPanelProps) {
   const [artworks, setArtworks] = useState<Artwork[]>(initialArtworks);
   const [submissionOpen, setSubmissionOpen] = useState(initialSubmissionStatus);
   const [leaderboardVisible, setLeaderboardVisible] = useState(initialLeaderboardStatus);
@@ -156,11 +157,17 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLe
   
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold font-headline">Dasbor Admin</h1>
-        <p className="text-muted-foreground">
-          Kelola semua karya yang telah diunggah oleh peserta dan atur pendaftaran.
-        </p>
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold font-headline">Dasbor Admin</h1>
+          <p className="text-muted-foreground">
+            Kelola semua karya yang telah diunggah oleh peserta dan atur pendaftaran.
+          </p>
+        </div>
+        <Button variant="outline" onClick={onLogout}>
+            <LogOut className="mr-2" />
+            Logout
+        </Button>
       </div>
       
       <section>
@@ -420,4 +427,3 @@ function ScoreTable({ scores, totalPoints }: { scores: JudgeScore[], totalPoints
         </div>
     )
 }
-
