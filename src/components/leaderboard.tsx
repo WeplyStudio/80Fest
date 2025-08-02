@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Artwork, JudgeScore } from '@/lib/types';
 import { Medal, Trophy, Star, MessageCircle } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from './ui/badge';
 import {
   Table,
@@ -157,7 +157,7 @@ function WinnerCard({ artwork, rank, onArtworkUpdate, findArtworkById }: WinnerC
                     <h3 className="font-semibold font-headline mb-2">Rincian Poin</h3>
                     <ScoreTable scores={currentArtwork.scores || []} totalPoints={currentArtwork.totalPoints || 0} />
                   </div>
-                  <CommentSection artwork={currentArtwork} onArtworkUpdate={handleArtworkUpdate} />
+                  <CommentSection artwork={currentArtwork} onArtworkUpdate={onArtworkUpdate} />
               </div>
           </div>
       </DialogContent>
