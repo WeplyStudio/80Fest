@@ -5,7 +5,7 @@ import { z } from "zod";
 import { getArtworksCollection, getSettingsCollection } from "./mongodb";
 import { revalidatePath } from "next/cache";
 import { ObjectId } from "mongodb";
-import type { Artwork, JudgeScore, Comment, ScoreCriteria } from "./types";
+import type { Artwork, JudgeScore, Comment, ScoreCriteria, ContestInfoData } from "./types";
 
 // Helper to revalidate all important paths
 function revalidateAll() {
@@ -83,7 +83,7 @@ export async function getSuggestedArtworks(currentId: string, limit: number = 4)
         }
         const collection = await getArtworksCollection();
         const suggestions = await collection.aggregate([
-            { $match: { _id: { $ne: new ObjectId(currentId) }, isInGallery: true } },
+            { $match: { _id: { $ne: new ObjectId(currentId) }, isInGallery: true, isDisqualified: false } },
             { $sample: { size: limit } }
         ]).toArray();
         return suggestions.map(docToArtwork);
@@ -264,6 +264,7 @@ export async function givePoints(artworkId: string, judgeName: string, criteria:
         );
 
         revalidatePath(`/judge`);
+        revalidatePath(`/admin`);
         
         return { success: true, updatedArtwork: docToArtwork(result) };
 
@@ -371,5 +372,63 @@ export async function setLeaderboardStatus(showResults: boolean) {
     } catch (error) {
         console.error("Gagal mengubah status leaderboard:", error);
         return { success: false, message: "Gagal mengubah status leaderboard." };
+    }
+}
+
+// --- Contest Info Actions ---
+
+const contestInfoSchema = z.object({
+  theme: z.string().min(1),
+  dates: z.string().min(1),
+  rules: z.string().min(1),
+  criteria: z.string().min(1),
+});
+
+const defaultContestInfo: ContestInfoData = {
+    theme: "Dirgahayu Republik Indonesia ke-80: Bersatu Berdaulat Rakyat Sejahtera Indonesia Maju",
+    dates: "• **Pengumpulan:** 6 - 8 Agustus 2025\n• **Periode Penjurian:** 8 Agustus 2025\n• **Pengumuman Pemenang:** 9 Agustus 2025",
+    rules: "• Karya harus 100% orisinal dan belum pernah dipublikasikan sebelumnya.\n• Juri dapat mendiskualifikasi karya karena plagiarisme atau pelanggaran hak cipta.\n• Format yang diterima adalah PNG atau JPG, ukuran maksimal 32MB.\n• Keputusan juri bersifat final dan tidak dapat diganggu gugat.",
+    criteria: "• Kesesuaian dengan tema\n• Tata letak dan komposisi\n• Penggunaan tipografi dan warna\n• Kejelasan dan dampak konten"
+};
+
+
+export async function getContestInfo(): Promise<ContestInfoData> {
+    try {
+        const settings = await getSettingsCollection();
+        const config = await settings.findOne({ key: "contestInfo" });
+        if (config && config.data) {
+            return config.data;
+        }
+        return defaultContestInfo;
+    } catch (error) {
+        console.error("Gagal mengambil info kontes:", error);
+        return defaultContestInfo;
+    }
+}
+
+export async function updateContestInfo(formData: FormData) {
+    const rawData = {
+        theme: formData.get('theme'),
+        dates: formData.get('dates'),
+        rules: formData.get('rules'),
+        criteria: formData.get('criteria'),
+    };
+    const parsed = contestInfoSchema.safeParse(rawData);
+     if (!parsed.success) {
+        return { success: false, message: 'Semua kolom harus diisi.' };
+    }
+
+    try {
+        const settings = await getSettingsCollection();
+        await settings.updateOne(
+            { key: "contestInfo" },
+            { $set: { data: parsed.data } },
+            { upsert: true }
+        );
+        revalidateAll();
+        return { success: true };
+    } catch (error) {
+        console.error("Gagal memperbarui info kontes:", error);
+        return { success: false, message: "Gagal memperbarui info kontes." };
     }
 }

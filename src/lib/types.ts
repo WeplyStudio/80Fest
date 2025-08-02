@@ -35,3 +35,10 @@ export type Artwork = {
   comments: Comment[];
   createdAt: Date;
 };
+
+export type ContestInfoData = {
+    theme: string;
+    dates: string;
+    rules: string;
+    criteria: string;
+};

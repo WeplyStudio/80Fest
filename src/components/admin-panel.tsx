@@ -3,7 +3,7 @@
 
 import { useState, useMemo } from "react";
 import Image from "next/image";
-import type { Artwork, JudgeScore } from "@/lib/types";
+import type { Artwork, ContestInfoData, JudgeScore } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -50,16 +50,18 @@ import { Input } from "./ui/input";
 import { EditArtworkDialog } from "./edit-artwork-dialog";
 import React from "react";
 import { Textarea } from "./ui/textarea";
+import { ContestInfoEditor } from "./contest-info-editor";
 
 
 interface AdminPanelProps {
     initialArtworks: Artwork[];
     initialSubmissionStatus: boolean;
     initialLeaderboardStatus: boolean;
+    initialContestInfo: ContestInfoData;
     onLogout: () => void;
 }
 
-export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLeaderboardStatus, onLogout }: AdminPanelProps) {
+export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLeaderboardStatus, initialContestInfo, onLogout }: AdminPanelProps) {
   const [artworks, setArtworks] = useState<Artwork[]>(initialArtworks);
   const [submissionOpen, setSubmissionOpen] = useState(initialSubmissionStatus);
   const [leaderboardVisible, setLeaderboardVisible] = useState(initialLeaderboardStatus);
@@ -240,6 +242,8 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLe
             </Card>
         </div>
       </section>
+
+      <ContestInfoEditor initialData={initialContestInfo} />
 
       <Card>
         <CardHeader>

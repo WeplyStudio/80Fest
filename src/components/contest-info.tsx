@@ -1,52 +1,41 @@
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, Palette, ScrollText, ClipboardCheck } from "lucide-react";
+import { getContestInfo } from "@/lib/actions";
+import ReactMarkdown from 'react-markdown';
 
-const infoItems = [
-  {
-    icon: Palette,
-    title: "Tema Poster",
-    content: "Dirgahayu Republik Indonesia ke-80: Bersatu Berdaulat Rakyat Sejahtera Indonesia Maju",
-  },
-  {
-    icon: Calendar,
-    title: "Tanggal Penting",
-    content: (
-        <ul className="list-disc pl-5 space-y-1">
-            <li><strong>Pengumpulan:</strong> 6 - 8 Agustus 2025</li>
-            <li><strong>Periode Penjurian:</strong> 8 Agustus 2025</li>
-            <li><strong>Pengumuman Pemenang:</strong> 9 Agustus 2025</li>
-        </ul>
-    ),
-  },
-  {
-    icon: ScrollText,
-    title: "Ketentuan Umum",
-    content: (
-        <ul className="list-disc pl-5 space-y-1">
-            <li>Karya harus 100% orisinal dan belum pernah dipublikasikan sebelumnya.</li>
-            <li>Juri dapat mendiskualifikasi karya karena plagiarisme atau pelanggaran hak cipta.</li>
-            <li>Format yang diterima adalah PNG atau JPG, ukuran maksimal 32MB.</li>
-            <li>Keputusan juri bersifat final dan tidak dapat diganggu gugat.</li>
-        </ul>
-    ),
-  },
-  {
-    icon: ClipboardCheck,
-    title: "Kriteria Penilaian",
-    content: (
-        <ul className="list-disc pl-5 space-y-1">
-            <li>Kesesuaian dengan tema</li>
-            <li>Tata letak dan komposisi</li>
-            <li>Penggunaan tipografi dan warna</li>
-            <li>Kejelasan dan dampak konten</li>
-        </ul>
-    ),
-  },
-];
+// Helper component to render list items correctly from markdown
+const renderers = {
+    ul: ({ children }: { children: React.ReactNode }) => <ul className="list-disc pl-5 space-y-1">{children}</ul>,
+    li: ({ children }: { children: React.ReactNode }) => <li>{children}</li>,
+};
 
 
-export function ContestInfo() {
+export async function ContestInfo() {
+  const contestInfo = await getContestInfo();
+
+  const infoItems = [
+    {
+      icon: Palette,
+      title: "Tema Poster",
+      content: contestInfo.theme,
+    },
+    {
+      icon: Calendar,
+      title: "Tanggal Penting",
+      content: contestInfo.dates,
+    },
+    {
+      icon: ScrollText,
+      title: "Ketentuan Umum",
+      content: contestInfo.rules,
+    },
+    {
+      icon: ClipboardCheck,
+      title: "Kriteria Penilaian",
+      content: contestInfo.criteria,
+    },
+  ];
+
   return (
     <section id="info" className="space-y-16 section-padding container">
         <div className="text-center">
@@ -61,8 +50,8 @@ export function ContestInfo() {
                     </div>
                     <div>
                         <h3 className="font-headline text-xl font-semibold mb-2">{item.title}</h3>
-                        <div className="text-muted-foreground leading-relaxed">
-                            {item.content}
+                        <div className="text-muted-foreground leading-relaxed prose prose-sm prose-p:my-0 prose-ul:my-0 prose-li:my-0 prose-strong:text-foreground">
+                             <ReactMarkdown components={renderers}>{item.content}</ReactMarkdown>
                         </div>
                     </div>
                 </div>
