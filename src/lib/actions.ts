@@ -71,6 +71,7 @@ export async function getPendingComments(): Promise<Comment[]> {
                 pendingComments.push({
                     ...comment,
                     id: comment.id.toString(),
+                    parentId: comment.parentId ? comment.parentId.toString() : null,
                     artworkId: artwork._id.toString(),
                     artworkTitle: artwork.title,
                 });
@@ -318,13 +319,14 @@ export async function addComment(artworkId: string, formData: FormData, parentId
         
         let finalParentId = null;
         if (parentId) {
+            // Find the comment being replied to
             const parentComment = artwork.comments.find((c: any) => c.id.toString() === parentId);
-            // If the parent comment is itself a reply, use its parentId to trace back to the root comment.
-            // Otherwise, use its own id as the parent.
-            if (parentComment && parentComment.parentId) {
-                finalParentId = parentComment.parentId;
-            } else if (parentComment) {
-                finalParentId = new ObjectId(parentId);
+            
+            // If the parent comment is itself a reply (it has a parentId), use that parentId.
+            // Otherwise, it's a root comment, so use its own id.
+            // This ensures all replies are direct children of a root comment.
+            if (parentComment) {
+                 finalParentId = parentComment.parentId ? parentComment.parentId : parentComment.id;
             }
         }
         
