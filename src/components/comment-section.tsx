@@ -98,17 +98,15 @@ export function CommentSection({ artwork, onArtworkUpdate }: CommentSectionProps
                          <p className="text-xs text-muted-foreground">
                             {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true, locale: indonesianLocale })}
                         </p>
-                        {!isSubComment && (
-                            <Button variant="ghost" size="sm" className="h-auto px-2 py-1 text-xs" onClick={() => setReplyTo(comment.id)}>
-                                <CornerDownRight className="w-3 h-3 mr-1" />
-                                Balas
-                            </Button>
-                        )}
+                        <Button variant="ghost" size="sm" className="h-auto px-2 py-1 text-xs" onClick={() => setReplyTo(comment.id)}>
+                            <CornerDownRight className="w-3 h-3 mr-1" />
+                            Balas
+                        </Button>
                     </div>
                 </div>
                 {comment.replies && comment.replies.length > 0 && (
                      <div className="pl-6 border-l-2 ml-3 space-y-3">
-                        {renderComments(comment.replies, true)}
+                        {renderComments(comment.replies.sort((a,b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()), true)}
                     </div>
                 )}
             </div>

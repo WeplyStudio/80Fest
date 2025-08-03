@@ -318,13 +318,13 @@ export async function addComment(artworkId: string, formData: FormData, parentId
         
         let finalParentId = null;
         if (parentId) {
-            const parentComment = artwork.comments.find(c => c.id.toString() === parentId);
-            // If the parent comment is itself a reply, use its parentId. Otherwise, use its own id.
-            // This flattens the comment structure to one level of replies.
+            const parentComment = artwork.comments.find((c: any) => c.id.toString() === parentId);
+            // If the parent comment is itself a reply, use its parentId to trace back to the root comment.
+            // Otherwise, use its own id as the parent.
             if (parentComment && parentComment.parentId) {
                 finalParentId = parentComment.parentId;
-            } else {
-                finalParentId = parentId ? new ObjectId(parentId) : null;
+            } else if (parentComment) {
+                finalParentId = new ObjectId(parentId);
             }
         }
         
