@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import type { Artwork } from "@/lib/types";
-import { Camera } from "lucide-react";
+import { Camera, Heart } from "lucide-react";
 
 interface GalleryProps {
   artworks: Artwork[];
@@ -56,7 +56,13 @@ export function Gallery({ artworks: initialArtworks }: GalleryProps) {
                   <CardContent className="p-4 flex-grow flex flex-col justify-between">
                      <div>
                        <CardTitle className="font-headline text-lg mb-1 truncate group-hover:text-primary">{artwork.title}</CardTitle>
-                       <p className="text-sm text-muted-foreground">{artwork.name} - {artwork.class}</p>
+                        <div className="flex justify-between items-center text-sm text-muted-foreground">
+                            <span>{artwork.name} - {artwork.class}</span>
+                             <div className="flex items-center gap-1">
+                                <Heart className="w-4 h-4 text-red-500/80" />
+                                <span>{artwork.likes}</span>
+                            </div>
+                        </div>
                      </div>
                   </CardContent>
               </Card>

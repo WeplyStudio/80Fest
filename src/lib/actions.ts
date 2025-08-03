@@ -50,6 +50,7 @@ function docToArtwork(doc: any): Artwork {
         id: _id.toString(),
         scores: doc.scores || [],
         totalPoints: doc.totalPoints || 0,
+        likes: doc.likes || 0,
         comments: processedComments,
         createdAt: doc.createdAt,
         customData: doc.customData || {},
@@ -190,6 +191,7 @@ export async function submitArtwork(formData: FormData) {
       imageUrl: imageUrl,
       scores: [],
       totalPoints: 0,
+      likes: 0,
       isDisqualified: false,
       disqualificationReason: null,
       isInGallery: false,
@@ -268,6 +270,7 @@ export async function disqualifyArtwork(artworkId: string, reason: string, isDis
         if (isDisqualified) {
             updateData.totalPoints = 0;
             updateData.scores = [];
+            updateData.likes = 0;
         }
 
         await artworks.updateOne(
@@ -337,6 +340,36 @@ export async function givePoints(artworkId: string, judgeName: string, criteria:
     }
 }
 
+export async function toggleLike(artworkId: string, liked: boolean) {
+    if (!ObjectId.isValid(artworkId)) {
+        return { success: false, message: "ID Karya tidak valid." };
+    }
+    
+    try {
+        const artworks = await getArtworksCollection();
+        const update = { $inc: { likes: liked ? 1 : -1 } };
+        const result = await artworks.findOneAndUpdate(
+            { _id: new ObjectId(artworkId) },
+            update,
+            { returnDocument: 'after' }
+        );
+        
+        if (!result) {
+            return { success: false, message: "Karya tidak ditemukan." };
+        }
+        
+        revalidatePath(`/karya/${artworkId}`);
+        revalidatePath(`/`);
+        
+        return { success: true, newLikes: result.likes };
+
+    } catch (error) {
+        console.error("Gagal mengubah status 'like':", error);
+        return { success: false, message: "Terjadi kesalahan pada server." };
+    }
+}
+
+
 const commentSchema = z.object({
   commentText: z.string().min(1, "Komentar tidak boleh kosong.").max(500, "Komentar maksimal 500 karakter."),
 });
@@ -359,8 +392,10 @@ export async function addComment(artworkId: string, formData: FormData, parentId
         
         let finalParentId = null;
         if (parentId) {
+            const commentsWithObjectId = artwork.comments.map((c: any) => ({...c, id: new ObjectId(c.id)}));
+
             // Find the comment being replied to
-            const parentComment = artwork.comments.find((c: any) => c.id.toString() === parentId);
+            const parentComment = commentsWithObjectId.find((c: any) => c.id.toString() === parentId);
             
             // If the parent comment is itself a reply (it has a parentId), use that parentId.
             // Otherwise, it's a root comment, so use its own id.
@@ -612,7 +647,7 @@ export async function updateFormFields(fields: FormFieldDefinition[]) {
     const fieldSchema = z.array(z.object({
         name: z.string().min(1).regex(/^[a-z0-9_]+$/, "Nama kolom hanya boleh berisi huruf kecil, angka, dan garis bawah."),
         label: z.string().min(1),
-        type: z.literal('text'), // For now only text is supported
+        type: z.literal('text'), // For now only supporting text fields
         required: z.boolean()
     }));
 

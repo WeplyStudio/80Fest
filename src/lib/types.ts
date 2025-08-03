@@ -33,6 +33,7 @@ export type Artwork = {
   imageUrl: string;
   scores: JudgeScore[];
   totalPoints: number;
+  likes: number; // Jumlah "like" yang diterima karya
   isDisqualified: boolean;
   disqualificationReason: string | null;
   isInGallery: boolean; // true if it should be shown in the public gallery

@@ -2,10 +2,10 @@
 import { getArtworkById, getSuggestedArtworks } from "@/lib/actions";
 import { notFound } from "next/navigation";
 import Image from "next/image";
-import { CommentSection } from "@/components/comment-section";
 import { SuggestedArtworks } from "@/components/suggested-artworks";
 import { ArtworkDetailClient } from "./client-page";
 import { Badge } from "@/components/ui/badge";
+import { LikeButton } from "@/components/like-button";
 
 export default async function ArtworkPage({ params }: { params: { id: string } }) {
   const artwork = await getArtworkById(params.id);
@@ -35,9 +35,12 @@ export default async function ArtworkPage({ params }: { params: { id: string } }
             <div className="flex flex-col gap-6">
                 <div>
                     <h1 className="font-headline text-3xl md:text-4xl font-bold">{artwork.title}</h1>
-                    <p className="text-lg text-muted-foreground mt-1">
-                        Oleh: {artwork.name} (Kelas {artwork.class})
-                    </p>
+                    <div className="flex justify-between items-center mt-1">
+                         <p className="text-lg text-muted-foreground">
+                            Oleh: {artwork.name} (Kelas {artwork.class})
+                        </p>
+                        <LikeButton artworkId={artwork.id} initialLikes={artwork.likes} />
+                    </div>
                 </div>
                 <div>
                     <h3 className="font-semibold font-headline mb-2">Deskripsi Karya</h3>
