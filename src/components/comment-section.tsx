@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useOptimistic, useRef, Fragment, useMemo } from 'react';
+import { useState, useOptimistic, useRef, useMemo } from 'react';
 import type { Artwork, Comment } from "@/lib/types";
 import { addComment } from "@/lib/actions";
 import { useToast } from "@/hooks/use-toast";
@@ -89,7 +89,7 @@ export function CommentSection({ artwork, onArtworkUpdate }: CommentSectionProps
         return rootComments.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }, [optimisticComments]);
 
-    const renderComments = (comments: (Comment & { replies: Comment[] })[]) => {
+    const renderComments = (comments: (Comment & { replies: Comment[] })[], isSubComment = false) => {
         return comments.map(comment => (
             <div key={comment.id} className="space-y-3">
                 <div className="text-sm bg-muted/50 p-3 rounded-lg">
@@ -98,15 +98,17 @@ export function CommentSection({ artwork, onArtworkUpdate }: CommentSectionProps
                          <p className="text-xs text-muted-foreground">
                             {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true, locale: indonesianLocale })}
                         </p>
-                        <Button variant="ghost" size="sm" className="h-auto px-2 py-1 text-xs" onClick={() => setReplyTo(comment.id)}>
-                            <CornerDownRight className="w-3 h-3 mr-1" />
-                            Balas
-                        </Button>
+                        {!isSubComment && (
+                            <Button variant="ghost" size="sm" className="h-auto px-2 py-1 text-xs" onClick={() => setReplyTo(comment.id)}>
+                                <CornerDownRight className="w-3 h-3 mr-1" />
+                                Balas
+                            </Button>
+                        )}
                     </div>
                 </div>
                 {comment.replies && comment.replies.length > 0 && (
                      <div className="pl-6 border-l-2 ml-3 space-y-3">
-                        {renderComments(comment.replies)}
+                        {renderComments(comment.replies, true)}
                     </div>
                 )}
             </div>

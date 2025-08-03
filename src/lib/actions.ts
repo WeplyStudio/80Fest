@@ -310,6 +310,23 @@ export async function addComment(artworkId: string, formData: FormData, parentId
 
     try {
         const artworks = await getArtworksCollection();
+        const artwork = await artworks.findOne({ _id: new ObjectId(artworkId) });
+
+        if (!artwork) {
+            return { success: false, message: "Karya tidak ditemukan." };
+        }
+        
+        let finalParentId = null;
+        if (parentId) {
+            const parentComment = artwork.comments.find(c => c.id.toString() === parentId);
+            // If the parent comment is itself a reply, use its parentId. Otherwise, use its own id.
+            // This flattens the comment structure to one level of replies.
+            if (parentComment && parentComment.parentId) {
+                finalParentId = parentComment.parentId;
+            } else {
+                finalParentId = parentId ? new ObjectId(parentId) : null;
+            }
+        }
         
         // Moderate comment with AI
         const moderationResult = await moderateComment({ commentText: parsed.data.commentText });
@@ -318,14 +335,14 @@ export async function addComment(artworkId: string, formData: FormData, parentId
             id: new ObjectId().toString(),
             text: parsed.data.commentText,
             createdAt: new Date(),
-            parentId: parentId ? new ObjectId(parentId).toString() : null,
+            parentId: finalParentId ? finalParentId.toString() : null,
             isPendingModeration: !moderationResult.isAppropriate,
             moderationReason: moderationResult.reason || null,
         };
 
         const result = await artworks.findOneAndUpdate(
             { _id: new ObjectId(artworkId) },
-            { $push: { comments: { ...newComment, id: new ObjectId(newComment.id) } } },
+            { $push: { comments: { ...newComment, id: new ObjectId(newComment.id), parentId: finalParentId } } },
             { returnDocument: 'after' }
         );
 
