@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -49,6 +49,36 @@ const baseSchema = z.object({
 
 type Step = "form" | "preview" | "submitting" | "closed";
 
+const buildSchemaAndDefaults = (fields: FormFieldDefinition[]) => {
+    const customFieldsShape: Record<string, z.ZodType<any, any>> = {};
+    const customDefaults: Record<string, any> = {};
+
+    fields.forEach(field => {
+        let fieldSchema: z.ZodType<any, any> = z.string();
+        if (field.required) {
+            fieldSchema = fieldSchema.min(1, `${field.label} tidak boleh kosong.`);
+        } else {
+            fieldSchema = fieldSchema.optional();
+        }
+        const fieldName = `custom_${field.name}`;
+        customFieldsShape[fieldName] = fieldSchema;
+        customDefaults[fieldName] = "";
+    });
+
+    const fullSchema = baseSchema.extend(customFieldsShape);
+    const defaultValues = {
+        name: "",
+        class: undefined,
+        title: "",
+        description: "",
+        artworkFile: undefined,
+        ...customDefaults,
+    };
+    
+    return { schema: fullSchema, defaults: defaultValues };
+};
+
+
 export default function SubmitPage() {
   const [step, setStep] = useState<Step>("form");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -56,11 +86,13 @@ export default function SubmitPage() {
   const router = useRouter();
   const [submissionStatus, setSubmissionStatus] = useState<boolean | null>(null);
   const [formFields, setFormFields] = useState<FormFieldDefinition[] | null>(null);
-  const [submissionSchema, setSubmissionSchema] = useState<z.ZodSchema>(baseSchema);
   
+  const { schema, defaults } = useMemo(() => buildSchemaAndDefaults(formFields || []), [formFields]);
+
   const form = useForm({
-    resolver: zodResolver(submissionSchema),
-    mode: "onChange"
+    resolver: zodResolver(schema),
+    mode: "onChange",
+    defaultValues: defaults,
   });
 
   useEffect(() => {
@@ -69,27 +101,9 @@ export default function SubmitPage() {
         setSubmissionStatus(status);
         if (!status) {
           setStep("closed");
-          return;
+        } else {
+          setFormFields(fields);
         }
-        
-        setFormFields(fields);
-
-        // Dynamically build the Zod schema
-        let dynamicSchema = baseSchema;
-        const customFieldsShape: Record<string, z.ZodType<any, any>> = {};
-
-        fields.forEach(field => {
-          let fieldSchema: z.ZodType<any, any> = z.string();
-          if (field.required) {
-            fieldSchema = fieldSchema.min(1, `${field.label} tidak boleh kosong.`);
-          } else {
-            fieldSchema = fieldSchema.optional();
-          }
-           customFieldsShape[`custom_${field.name}`] = fieldSchema;
-        });
-
-        dynamicSchema = dynamicSchema.extend(customFieldsShape);
-        setSubmissionSchema(dynamicSchema);
       })
       .catch(err => {
         toast({ variant: 'destructive', title: 'Gagal memuat konfigurasi formulir.' });
@@ -97,15 +111,8 @@ export default function SubmitPage() {
       });
   }, [toast]);
   
-  // Re-initialize form when schema changes
-  useEffect(() => {
-     form.reset(undefined, {
-      keepValues: true
-     });
-  }, [submissionSchema, form]);
 
-
-  const handlePreview = (data: z.infer<typeof submissionSchema>) => {
+  const handlePreview = (data: z.infer<typeof schema>) => {
     if (data.artworkFile && data.artworkFile[0]) {
       const url = URL.createObjectURL(data.artworkFile[0]);
       setPreviewUrl(url);
@@ -175,7 +182,7 @@ export default function SubmitPage() {
     const customData: Record<string, string> = {};
     formFields?.forEach(field => {
         const value = data[`custom_${field.name}`];
-        if (value !== undefined && value !== null) {
+        if (value !== undefined && value !== null && value !== '') {
             customData[field.name] = String(value);
         }
     });
