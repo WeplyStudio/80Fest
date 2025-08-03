@@ -38,6 +38,7 @@ export type Artwork = {
   isInGallery: boolean; // true if it should be shown in the public gallery
   comments: Comment[];
   createdAt: Date;
+  customData: Record<string, string>; // For custom form fields
 };
 
 export type ContestInfoData = {
@@ -50,4 +51,11 @@ export type ContestInfoData = {
 export type AnnouncementBannerData = {
     text: string;
     isEnabled: boolean;
+};
+
+export type FormFieldDefinition = {
+    name: string; // Will be used as the key in customData
+    label: string;
+    type: 'text'; // Currently only supporting text fields
+    required: boolean;
 };

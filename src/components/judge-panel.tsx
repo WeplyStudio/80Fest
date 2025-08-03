@@ -174,6 +174,19 @@ export function JudgePanel({ initialArtworks, judgeName, onLogout }: JudgePanelP
                                     <h3 className="font-semibold font-headline mb-2">Deskripsi Karya</h3>
                                     <p className="text-muted-foreground mb-4 text-sm">{artwork.description}</p>
                                   </div>
+                                   {artwork.customData && Object.keys(artwork.customData).length > 0 && (
+                                     <div>
+                                        <h3 className="font-semibold font-headline mb-2">Informasi Tambahan</h3>
+                                        <div className="space-y-2">
+                                            {Object.entries(artwork.customData).map(([key, value]) => (
+                                                <div key={key}>
+                                                    <p className="text-sm font-medium">{key.replace(/_/g, ' ')}</p>
+                                                    <p className="text-muted-foreground text-sm">{value}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                  )}
                                   <div>
                                     <h3 className="font-semibold font-headline mb-2">Poin Dari Anda</h3>
                                     <ScoreTable scores={artwork.scores || []} judgeName={judgeName} />

@@ -18,20 +18,21 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Send, ArrowLeft, Eye, Image as ImageIcon } from "lucide-react";
-import { submitArtwork, getSubmissionStatus } from "@/lib/actions";
+import { Loader2, Send, ArrowLeft, Eye, XCircle } from "lucide-react";
+import { submitArtwork, getSubmissionStatus, getFormFields } from "@/lib/actions";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import imageCompression from 'browser-image-compression';
+import type { FormFieldDefinition } from "@/lib/types";
 
 const classes = ["VII", "VIII", "IX"] as const;
 const MAX_FILE_SIZE_MB = 1;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
-const submissionSchema = z.object({
+const baseSchema = z.object({
   name: z.string().min(3, "Nama harus diisi, minimal 3 karakter."),
   class: z.enum(classes, { required_error: "Kelas harus dipilih." }),
   title: z.string().min(5, "Judul karya harus diisi, minimal 5 karakter."),
@@ -45,7 +46,6 @@ const submissionSchema = z.object({
     ),
 });
 
-type SubmissionFormValues = z.infer<typeof submissionSchema>;
 
 type Step = "form" | "preview" | "submitting" | "closed";
 
@@ -55,28 +55,57 @@ export default function SubmitPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [submissionStatus, setSubmissionStatus] = useState<boolean | null>(null);
-
-
-  const form = useForm<SubmissionFormValues>({
+  const [formFields, setFormFields] = useState<FormFieldDefinition[] | null>(null);
+  const [submissionSchema, setSubmissionSchema] = useState<z.ZodSchema>(baseSchema);
+  
+  const form = useForm({
     resolver: zodResolver(submissionSchema),
-    defaultValues: {
-      name: "",
-      class: undefined,
-      title: "",
-      description: "",
-      artworkFile: undefined,
-    },
     mode: "onChange"
   });
 
   useEffect(() => {
-      getSubmissionStatus().then(status => {
-          setSubmissionStatus(status);
-          if (!status) setStep("closed");
-      })
-  }, []);
+    Promise.all([getSubmissionStatus(), getFormFields()])
+      .then(([status, fields]) => {
+        setSubmissionStatus(status);
+        if (!status) {
+          setStep("closed");
+          return;
+        }
+        
+        setFormFields(fields);
 
-  const handlePreview = (data: SubmissionFormValues) => {
+        // Dynamically build the Zod schema
+        let dynamicSchema = baseSchema;
+        const customFieldsShape: Record<string, z.ZodType<any, any>> = {};
+
+        fields.forEach(field => {
+          let fieldSchema: z.ZodType<any, any> = z.string();
+          if (field.required) {
+            fieldSchema = fieldSchema.min(1, `${field.label} tidak boleh kosong.`);
+          } else {
+            fieldSchema = fieldSchema.optional();
+          }
+           customFieldsShape[`custom_${field.name}`] = fieldSchema;
+        });
+
+        dynamicSchema = dynamicSchema.extend(customFieldsShape);
+        setSubmissionSchema(dynamicSchema);
+      })
+      .catch(err => {
+        toast({ variant: 'destructive', title: 'Gagal memuat konfigurasi formulir.' });
+        setStep("closed");
+      });
+  }, [toast]);
+  
+  // Re-initialize form when schema changes
+  useEffect(() => {
+     form.reset(undefined, {
+      keepValues: true
+     });
+  }, [submissionSchema, form]);
+
+
+  const handlePreview = (data: z.infer<typeof submissionSchema>) => {
     if (data.artworkFile && data.artworkFile[0]) {
       const url = URL.createObjectURL(data.artworkFile[0]);
       setPreviewUrl(url);
@@ -135,11 +164,22 @@ export default function SubmitPage() {
         }
     }
     
+    // Append standard fields
     formData.append('name', data.name);
     formData.append('class', data.class);
     formData.append('title', data.title);
     formData.append('description', data.description);
     formData.append('artworkFile', finalFile, finalFile.name);
+
+    // Append custom fields
+    const customData: Record<string, string> = {};
+    formFields?.forEach(field => {
+        const value = data[`custom_${field.name}`];
+        if (value !== undefined && value !== null) {
+            customData[field.name] = String(value);
+        }
+    });
+    formData.append('customData', JSON.stringify(customData));
 
     const result = await submitArtwork(formData);
 
@@ -179,8 +219,11 @@ export default function SubmitPage() {
   if (step === "closed") {
        return (
         <div className="text-center py-20">
+             <div className="mx-auto bg-destructive/10 p-3 rounded-full w-fit mb-4">
+                <XCircle className="w-12 h-12 text-destructive" />
+            </div>
             <h1 className="text-4xl font-bold font-headline">Pendaftaran Ditutup</h1>
-            <p className="text-muted-foreground mt-4">Maaf, waktu untuk mengunggah karya telah berakhir.</p>
+            <p className="text-muted-foreground mt-4">Maaf, waktu untuk mengunggah karya telah berakhir atau situs sedang dalam pemeliharaan.</p>
             <Button asChild className="mt-8">
                 <Link href="/">Kembali ke Beranda</Link>
             </Button>
@@ -278,6 +321,25 @@ export default function SubmitPage() {
                     </FormItem>
                 )}
                 />
+                
+                {/* Dynamic Custom Fields */}
+                {formFields?.map(customField => (
+                     <FormField
+                        key={customField.name}
+                        control={form.control}
+                        name={`custom_${customField.name}`}
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>{customField.label} {customField.required ? '' : <span className="text-muted-foreground text-xs">(Opsional)</span>}</FormLabel>
+                                <FormControl>
+                                    <Input placeholder={`Masukkan ${customField.label.toLowerCase()}...`} {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                ))}
+
                 <FormField
                 control={form.control}
                 name="artworkFile"
@@ -338,6 +400,18 @@ export default function SubmitPage() {
                             <h3 className="text-sm font-medium text-muted-foreground">Deskripsi</h3>
                             <p className="text-sm leading-relaxed">{formData.description}</p>
                         </div>
+                        {formFields?.map(field => {
+                            const value = formData[`custom_${field.name}`];
+                            if (value) {
+                                return (
+                                    <div key={field.name}>
+                                        <h3 className="text-sm font-medium text-muted-foreground">{field.label}</h3>
+                                        <p className="text-sm leading-relaxed">{value}</p>
+                                    </div>
+                                )
+                            }
+                            return null;
+                        })}
                          <div>
                             <h3 className="text-sm font-medium text-muted-foreground">Nama File</h3>
                             <p className="text-sm text-muted-foreground">{formData.artworkFile?.[0]?.name}</p>

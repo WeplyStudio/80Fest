@@ -4,7 +4,7 @@
 import { useState, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import type { Artwork, ContestInfoData, JudgeScore, AnnouncementBannerData, Comment } from "@/lib/types";
+import type { Artwork, ContestInfoData, JudgeScore, AnnouncementBannerData, Comment, FormFieldDefinition } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -32,7 +32,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Eye, MoreHorizontal, Trash, GalleryVertical, GalleryVerticalEnd, Pencil, Star, Users, Layers, MessageCircle, LogOut, ShieldX, Check, X, AlertTriangle } from "lucide-react";
+import { Eye, MoreHorizontal, Trash, GalleryVertical, GalleryVerticalEnd, Pencil, Star, Users, Layers, MessageCircle, LogOut, ShieldX, Check, X, AlertTriangle, Hammer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -45,7 +45,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { deleteArtwork, toggleGalleryStatus, setSubmissionStatus, setLeaderboardStatus, disqualifyArtwork, approveComment, deleteCommentById } from "@/lib/actions";
+import { deleteArtwork, toggleGalleryStatus, setSubmissionStatus, setLeaderboardStatus, disqualifyArtwork, approveComment, deleteCommentById, setMaintenanceStatus } from "@/lib/actions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Switch } from "./ui/switch";
 import { Input } from "./ui/input";
@@ -54,22 +54,36 @@ import React from "react";
 import { Textarea } from "./ui/textarea";
 import { ContestInfoEditor } from "./contest-info-editor";
 import { AnnouncementBannerEditor } from "./announcement-banner-editor";
+import { FormFieldEditor } from "./form-field-editor";
 
 
 interface AdminPanelProps {
     initialArtworks: Artwork[];
     initialSubmissionStatus: boolean;
     initialLeaderboardStatus: boolean;
+    initialMaintenanceStatus: boolean;
     initialContestInfo: ContestInfoData;
     initialBannerInfo: AnnouncementBannerData;
     initialPendingComments: Comment[];
+    initialFormFields: FormFieldDefinition[];
     onLogout: () => void;
 }
 
-export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLeaderboardStatus, initialContestInfo, initialBannerInfo, initialPendingComments, onLogout }: AdminPanelProps) {
+export function AdminPanel({ 
+    initialArtworks, 
+    initialSubmissionStatus, 
+    initialLeaderboardStatus, 
+    initialMaintenanceStatus,
+    initialContestInfo, 
+    initialBannerInfo, 
+    initialPendingComments, 
+    initialFormFields,
+    onLogout 
+}: AdminPanelProps) {
   const [artworks, setArtworks] = useState<Artwork[]>(initialArtworks);
   const [submissionOpen, setSubmissionOpen] = useState(initialSubmissionStatus);
   const [leaderboardVisible, setLeaderboardVisible] = useState(initialLeaderboardStatus);
+  const [maintenanceActive, setMaintenanceActive] = useState(initialMaintenanceStatus);
   const [pendingComments, setPendingComments] = useState<Comment[]>(initialPendingComments);
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
@@ -173,6 +187,19 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLe
         toast({
             title: `Papan Peringkat ${result.newState ? "Ditampilkan" : "Disembunyikan"}`,
             description: `Hasil akhir sekarang ${result.newState ? "bisa" : "tidak bisa"} dilihat publik.`,
+        });
+    } else {
+        toast({ variant: 'destructive', title: "Gagal", description: result.message });
+    }
+  }
+  
+  const handleMaintenanceToggle = async (checked: boolean) => {
+    const result = await setMaintenanceStatus(checked);
+    if (result.success) {
+        setMaintenanceActive(result.newState);
+        toast({
+            title: `Mode Pemeliharaan ${result.newState ? "Diaktifkan" : "Dinonaktifkan"}`,
+            description: `Situs publik sekarang ${result.newState ? "tidak dapat" : "dapat"} diakses.`,
         });
     } else {
         toast({ variant: 'destructive', title: "Gagal", description: result.message });
@@ -283,8 +310,8 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLe
         <AnnouncementBannerEditor initialData={initialBannerInfo} />
         <Card>
             <CardHeader>
-                <CardTitle className="font-headline">Pengaturan Lomba</CardTitle>
-                <CardDescription>Atur status pendaftaran dan visibilitas papan peringkat.</CardDescription>
+                <CardTitle className="font-headline">Pengaturan Global</CardTitle>
+                <CardDescription>Atur status pendaftaran, visibilitas hasil, dan mode pemeliharaan.</CardDescription>
             </CardHeader>
             <CardContent className="grid sm:grid-cols-1 gap-4">
                 <div className="flex items-center space-x-4 rounded-md border p-4">
@@ -313,11 +340,27 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLe
                         id="leaderboard-status"
                     />
                 </div>
+                 <div className="flex items-center space-x-4 rounded-md border p-4 border-amber-500/50 bg-amber-500/10">
+                    <div className="flex-1 space-y-1">
+                        <p className="text-sm font-medium leading-none flex items-center gap-2"><Hammer />Mode Pemeliharaan</p>
+                        <p className="text-sm text-muted-foreground">
+                            Jika aktif, situs publik akan menampilkan halaman perbaikan.
+                        </p>
+                    </div>
+                    <Switch
+                        checked={maintenanceActive}
+                        onCheckedChange={handleMaintenanceToggle}
+                        id="maintenance-mode"
+                    />
+                </div>
             </CardContent>
         </Card>
       </div>
 
-      <ContestInfoEditor initialData={initialContestInfo} />
+      <div className="grid lg:grid-cols-2 gap-8">
+        <ContestInfoEditor initialData={initialContestInfo} />
+        <FormFieldEditor initialFields={initialFormFields} />
+      </div>
 
        <Card>
         <CardHeader>
@@ -469,6 +512,21 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLe
                                     <h3 className="font-semibold font-headline mb-2">Deskripsi Karya</h3>
                                     <p className="text-muted-foreground mb-4 text-sm">{artwork.description}</p>
                                   </div>
+                                  
+                                  {artwork.customData && Object.keys(artwork.customData).length > 0 && (
+                                     <div>
+                                        <h3 className="font-semibold font-headline mb-2">Informasi Tambahan</h3>
+                                        <div className="space-y-2">
+                                            {Object.entries(artwork.customData).map(([key, value]) => (
+                                                <div key={key}>
+                                                    <p className="text-sm font-medium">{key.replace(/_/g, ' ')}</p>
+                                                    <p className="text-muted-foreground text-sm">{value}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                  )}
+
                                   <div>
                                     <h3 className="font-semibold font-headline mb-2">Rincian Poin</h3>
                                     <ScoreTable scores={artwork.scores || []} totalPoints={artwork.totalPoints || 0} />

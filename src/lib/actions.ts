@@ -5,24 +5,26 @@ import { z } from "zod";
 import { getArtworksCollection, getSettingsCollection } from "./mongodb";
 import { revalidatePath } from "next/cache";
 import { ObjectId } from "mongodb";
-import type { Artwork, JudgeScore, Comment, ScoreCriteria, ContestInfoData, AnnouncementBannerData } from "./types";
+import type { Artwork, JudgeScore, Comment, ScoreCriteria, ContestInfoData, AnnouncementBannerData, FormFieldDefinition } from "./types";
 import { moderateComment } from "@/ai/flows/moderate-comment-flow";
 
 // Helper to revalidate all important paths
 function revalidateAll() {
     revalidatePath("/", "layout");
+    revalidatePath("/submit");
+    revalidatePath("/admin");
 }
 
 const classes = ["VII", "VIII", "IX"] as const;
 
-const submissionSchema = z.object({
+const baseSubmissionSchema = z.object({
   name: z.string().min(1),
   class: z.enum(classes),
   title: z.string().min(1),
   description: z.string().min(1),
 });
 
-const editSchema = submissionSchema;
+const editSchema = baseSubmissionSchema;
 
 // Helper function to convert a file to a Data URI
 async function fileToDataUri(file: File): Promise<string> {
@@ -50,6 +52,7 @@ function docToArtwork(doc: any): Artwork {
         totalPoints: doc.totalPoints || 0,
         comments: processedComments,
         createdAt: doc.createdAt,
+        customData: doc.customData || {},
     } as Artwork;
 }
 
@@ -124,8 +127,8 @@ export async function submitArtwork(formData: FormData) {
   
   const rawFormData = Object.fromEntries(formData.entries());
   
+  // Handle file
   const file = formData.get('artworkFile') as File | null;
-
   if (!file || file.size === 0) {
       return { success: false, message: 'File poster tidak valid atau kosong.' };
   }
@@ -136,9 +139,45 @@ export async function submitArtwork(formData: FormData) {
       return { success: false, message: 'Format file harus PNG atau JPG.' };
   }
 
-  const parsed = submissionSchema.safeParse(rawFormData);
+  // Handle custom data
+  const customDataString = formData.get('customData') as string | null;
+  let customData: Record<string, string> = {};
+  if (customDataString) {
+    try {
+        customData = JSON.parse(customDataString);
+    } catch (e) {
+        return { success: false, message: 'Data tambahan tidak valid.' };
+    }
+  }
+
+  // Dynamically build validation schema
+  const formFields = await getFormFields();
+  const customFieldsShape: Record<string, z.ZodType<any, any>> = {};
+  formFields.forEach(field => {
+    let fieldSchema: z.ZodType<any, any> = z.string();
+    if (field.required) {
+      fieldSchema = fieldSchema.min(1, `${field.label} tidak boleh kosong.`);
+    } else {
+      fieldSchema = fieldSchema.optional().or(z.literal(''));
+    }
+    customFieldsShape[field.name] = fieldSchema;
+  });
+  
+  const dynamicSubmissionSchema = baseSubmissionSchema.extend({
+      customData: z.object(customFieldsShape).optional()
+  });
+
+  const parsed = dynamicSubmissionSchema.safeParse({
+      name: rawFormData.name,
+      class: rawFormData.class,
+      title: rawFormData.title,
+      description: rawFormData.description,
+      customData: customData
+  });
+
   if (!parsed.success) {
-      return { success: false, message: 'Data tidak valid.' };
+      console.log(parsed.error.flatten());
+      return { success: false, message: 'Data tidak valid. Periksa kembali semua kolom.' };
   }
 
   try {
@@ -147,6 +186,7 @@ export async function submitArtwork(formData: FormData) {
 
     await artworks.insertOne({
       ...parsed.data,
+      customData: parsed.data.customData || {},
       imageUrl: imageUrl,
       scores: [],
       totalPoints: 0,
@@ -327,6 +367,8 @@ export async function addComment(artworkId: string, formData: FormData, parentId
             // This ensures all replies are direct children of a root comment.
             if (parentComment) {
                  finalParentId = parentComment.parentId ? parentComment.parentId : parentComment.id;
+            } else {
+                 finalParentId = new ObjectId(parentId)
             }
         }
         
@@ -396,63 +438,59 @@ export async function deleteCommentById(artworkId: string, commentId: string) {
 }
 
 
-// --- Submission Status Actions ---
+// --- Global Settings Actions ---
 
-export async function getSubmissionStatus(): Promise<boolean> {
+async function getSetting(key: string, defaultValue: any) {
     try {
         const settings = await getSettingsCollection();
-        const config = await settings.findOne({ key: "submission" });
-        return config ? config.isOpen : true;
+        const config = await settings.findOne({ key });
+        return config ? config.value : defaultValue;
     } catch (error) {
-        console.error("Gagal mengambil status pendaftaran:", error);
-        return true;
+        console.error(`Gagal mengambil pengaturan ${key}:`, error);
+        return defaultValue;
     }
+}
+
+async function setSetting(key: string, value: any) {
+    try {
+        const settings = await getSettingsCollection();
+        await settings.updateOne(
+            { key },
+            { $set: { value } },
+            { upsert: true }
+        );
+        revalidateAll();
+        return { success: true, newState: value };
+    } catch (error) {
+        console.error(`Gagal mengubah pengaturan ${key}:`, error);
+        return { success: false, message: `Gagal mengubah pengaturan ${key}.` };
+    }
+}
+
+export async function getSubmissionStatus(): Promise<boolean> {
+    const isMaintenance = await getMaintenanceStatus();
+    if (isMaintenance) return false;
+    return getSetting("submissionOpen", true);
 }
 
 export async function setSubmissionStatus(isOpen: boolean) {
-    try {
-        const settings = await getSettingsCollection();
-        await settings.updateOne(
-            { key: "submission" },
-            { $set: { isOpen: isOpen } },
-            { upsert: true }
-        );
-        revalidateAll();
-        return { success: true, newState: isOpen };
-    } catch (error) {
-        console.error("Gagal mengubah status pendaftaran:", error);
-        return { success: false, message: "Gagal mengubah status pendaftaran." };
-    }
+    return setSetting("submissionOpen", isOpen);
 }
 
-
-// --- Leaderboard Status Actions ---
-
 export async function getLeaderboardStatus(): Promise<boolean> {
-    try {
-        const settings = await getSettingsCollection();
-        const config = await settings.findOne({ key: "leaderboard" });
-        return config ? config.showResults : false;
-    } catch (error) {
-        console.error("Gagal mengambil status leaderboard:", error);
-        return false;
-    }
+    return getSetting("leaderboardVisible", false);
 }
 
 export async function setLeaderboardStatus(showResults: boolean) {
-    try {
-        const settings = await getSettingsCollection();
-        await settings.updateOne(
-            { key: "leaderboard" },
-            { $set: { showResults } },
-            { upsert: true }
-        );
-        revalidateAll();
-        return { success: true, newState: showResults };
-    } catch (error) {
-        console.error("Gagal mengubah status leaderboard:", error);
-        return { success: false, message: "Gagal mengubah status leaderboard." };
-    }
+    return setSetting("leaderboardVisible", showResults);
+}
+
+export async function getMaintenanceStatus(): Promise<boolean> {
+    return getSetting("maintenanceActive", false);
+}
+
+export async function setMaintenanceStatus(isActive: boolean) {
+    return setSetting("maintenanceActive", isActive);
 }
 
 // --- Contest Info Actions ---
@@ -552,5 +590,48 @@ export async function updateAnnouncementBanner(data: { text: string; isEnabled: 
     } catch (error) {
         console.error("Gagal memperbarui banner:", error);
         return { success: false, message: "Gagal memperbarui banner pengumuman." };
+    }
+}
+
+
+// --- Form Field Actions ---
+
+export async function getFormFields(): Promise<FormFieldDefinition[]> {
+     try {
+        const settings = await getSettingsCollection();
+        const config = await settings.findOne({ key: "formFields" });
+        return config ? config.fields : [];
+    } catch (error) {
+        console.error("Gagal mengambil kolom formulir:", error);
+        return [];
+    }
+}
+
+export async function updateFormFields(fields: FormFieldDefinition[]) {
+    // Basic validation on server
+    const fieldSchema = z.array(z.object({
+        name: z.string().min(1).regex(/^[a-z0-9_]+$/, "Nama kolom hanya boleh berisi huruf kecil, angka, dan garis bawah."),
+        label: z.string().min(1),
+        type: z.literal('text'), // For now only text is supported
+        required: z.boolean()
+    }));
+
+    const parsed = fieldSchema.safeParse(fields);
+    if (!parsed.success) {
+        return { success: false, message: parsed.error.errors[0].message };
+    }
+    
+    try {
+        const settings = await getSettingsCollection();
+        await settings.updateOne(
+            { key: "formFields" },
+            { $set: { fields: parsed.data } },
+            { upsert: true }
+        );
+        revalidateAll();
+        return { success: true };
+    } catch (error) {
+        console.error("Gagal memperbarui kolom formulir:", error);
+        return { success: false, message: "Gagal memperbarui kolom formulir." };
     }
 }
