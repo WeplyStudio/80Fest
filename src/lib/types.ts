@@ -14,10 +14,14 @@ export type JudgeScore = {
 
 export type Comment = {
   id: string;
+  artworkId?: string; // Optional: To know which artwork it belongs to in a flat list
+  artworkTitle?: string; // Optional: For display in admin panel
   text: string;
   createdAt: Date;
   parentId: string | null;
   replies: Comment[];
+  isPendingModeration: boolean;
+  moderationReason: string | null;
 }
 
 export type Artwork = {

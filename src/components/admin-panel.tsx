@@ -3,7 +3,8 @@
 
 import { useState, useMemo } from "react";
 import Image from "next/image";
-import type { Artwork, ContestInfoData, JudgeScore, AnnouncementBannerData } from "@/lib/types";
+import Link from "next/link";
+import type { Artwork, ContestInfoData, JudgeScore, AnnouncementBannerData, Comment } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -31,7 +32,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Eye, MoreHorizontal, Trash, GalleryVertical, GalleryVerticalEnd, Pencil, Star, Users, Layers, MessageCircle, LogOut, ShieldX } from "lucide-react";
+import { Eye, MoreHorizontal, Trash, GalleryVertical, GalleryVerticalEnd, Pencil, Star, Users, Layers, MessageCircle, LogOut, ShieldX, Check, X, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -44,7 +45,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { deleteArtwork, toggleGalleryStatus, setSubmissionStatus, setLeaderboardStatus, disqualifyArtwork } from "@/lib/actions";
+import { deleteArtwork, toggleGalleryStatus, setSubmissionStatus, setLeaderboardStatus, disqualifyArtwork, approveComment, deleteCommentById } from "@/lib/actions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Switch } from "./ui/switch";
 import { Input } from "./ui/input";
@@ -61,13 +62,15 @@ interface AdminPanelProps {
     initialLeaderboardStatus: boolean;
     initialContestInfo: ContestInfoData;
     initialBannerInfo: AnnouncementBannerData;
+    initialPendingComments: Comment[];
     onLogout: () => void;
 }
 
-export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLeaderboardStatus, initialContestInfo, initialBannerInfo, onLogout }: AdminPanelProps) {
+export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLeaderboardStatus, initialContestInfo, initialBannerInfo, initialPendingComments, onLogout }: AdminPanelProps) {
   const [artworks, setArtworks] = useState<Artwork[]>(initialArtworks);
   const [submissionOpen, setSubmissionOpen] = useState(initialSubmissionStatus);
   const [leaderboardVisible, setLeaderboardVisible] = useState(initialLeaderboardStatus);
+  const [pendingComments, setPendingComments] = useState<Comment[]>(initialPendingComments);
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
 
@@ -186,6 +189,26 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLe
     return null;
   }
   
+  const handleApproveComment = async (artworkId: string, commentId: string) => {
+    const result = await approveComment(artworkId, commentId);
+    if(result.success) {
+        setPendingComments(prev => prev.filter(c => c.id !== commentId));
+        toast({title: 'Komentar Disetujui', description: 'Komentar sekarang tampil untuk publik.'});
+    } else {
+        toast({variant: 'destructive', title: 'Gagal', description: result.message});
+    }
+  }
+
+  const handleDeleteComment = async (artworkId: string, commentId: string) => {
+    const result = await deleteCommentById(artworkId, commentId);
+    if(result.success) {
+        setPendingComments(prev => prev.filter(c => c.id !== commentId));
+        toast({variant: 'destructive', title: 'Komentar Dihapus', description: 'Komentar telah dihapus permanen.'});
+    } else {
+        toast({variant: 'destructive', title: 'Gagal', description: result.message});
+    }
+  }
+
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-start">
@@ -203,7 +226,7 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLe
       
       <section>
         <h2 className="text-2xl font-bold font-headline mb-4">Analitik Lomba</h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Total Karya Masuk</CardTitle>
@@ -241,6 +264,16 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLe
                     ) : (
                         <p>Belum ada karya.</p>
                     )}
+                </CardContent>
+            </Card>
+             <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Komentar Moderasi</CardTitle>
+                    <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{pendingComments.length}</div>
+                    <p className="text-xs text-muted-foreground">Komentar menunggu persetujuan</p>
                 </CardContent>
             </Card>
         </div>
@@ -285,6 +318,54 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLe
       </div>
 
       <ContestInfoEditor initialData={initialContestInfo} />
+
+       <Card>
+        <CardHeader>
+            <CardTitle className="font-headline">Moderasi Komentar</CardTitle>
+            <CardDescription>Tinjau komentar yang ditandai oleh AI sebelum ditampilkan ke publik.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            {pendingComments.length > 0 ? (
+                 <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Komentar</TableHead>
+                            <TableHead>Alasan Ditandai</TableHead>
+                            <TableHead>Pada Karya</TableHead>
+                            <TableHead className="text-right">Aksi</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {pendingComments.map((comment) => (
+                            <TableRow key={comment.id}>
+                                <TableCell className="max-w-xs break-words">{comment.text}</TableCell>
+                                <TableCell>
+                                    <Badge variant="destructive">{comment.moderationReason || 'Tidak pantas'}</Badge>
+                                </TableCell>
+                                <TableCell>
+                                    <Link href={`/karya/${comment.artworkId}`} className="text-sm hover:underline" target="_blank">
+                                        {comment.artworkTitle}
+                                    </Link>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    <div className="flex gap-2 justify-end">
+                                        <Button size="sm" variant="outline" onClick={() => handleDeleteComment(comment.artworkId!, comment.id)}>
+                                            <X className="mr-2" /> Tolak
+                                        </Button>
+                                        <Button size="sm" onClick={() => handleApproveComment(comment.artworkId!, comment.id)}>
+                                            <Check className="mr-2" /> Setujui
+                                        </Button>
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                 </Table>
+            ) : (
+                <p className="text-center text-muted-foreground py-4">Tidak ada komentar yang perlu dimoderasi.</p>
+            )}
+        </CardContent>
+      </Card>
       
       <div className="space-y-4">
         <h2 className="text-2xl font-bold font-headline">Daftar Karya Peserta</h2>
@@ -394,7 +475,7 @@ export function AdminPanel({ initialArtworks, initialSubmissionStatus, initialLe
                                   </div>
                                    <div className="text-center py-8 text-muted-foreground text-sm rounded-lg bg-card/50 mt-4">
                                         <MessageCircle className="mx-auto h-8 w-8 mb-2" />
-                                       <p>Komentar dinonaktifkan untuk kontes ini.</p>
+                                       <p>Lihat komentar di halaman detail karya. Komentar yang menunggu moderasi tidak akan tampil di publik.</p>
                                    </div>
                               </div>
                           </div>

@@ -6,6 +6,7 @@ import { getArtworksCollection, getSettingsCollection } from "./mongodb";
 import { revalidatePath } from "next/cache";
 import { ObjectId } from "mongodb";
 import type { Artwork, JudgeScore, Comment, ScoreCriteria, ContestInfoData, AnnouncementBannerData } from "./types";
+import { moderateComment } from "@/ai/flows/moderate-comment-flow";
 
 // Helper to revalidate all important paths
 function revalidateAll() {
@@ -57,6 +58,27 @@ export async function getArtworks(): Promise<Artwork[]> {
     const collection = await getArtworksCollection();
     const artworksFromDb = await collection.find({}).sort({ createdAt: -1 }).toArray();
     return artworksFromDb.map(docToArtwork);
+}
+
+export async function getPendingComments(): Promise<Comment[]> {
+    const collection = await getArtworksCollection();
+    const artworksWithPendingComments = await collection.find({ "comments.isPendingModeration": true }).toArray();
+    
+    const pendingComments: Comment[] = [];
+    artworksWithPendingComments.forEach(artwork => {
+        artwork.comments.forEach((comment: any) => {
+            if (comment.isPendingModeration) {
+                pendingComments.push({
+                    ...comment,
+                    id: comment.id.toString(),
+                    artworkId: artwork._id.toString(),
+                    artworkTitle: artwork.title,
+                });
+            }
+        });
+    });
+
+    return pendingComments.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
 export async function getArtworkById(id: string): Promise<Artwork | null> {
@@ -288,16 +310,22 @@ export async function addComment(artworkId: string, formData: FormData, parentId
 
     try {
         const artworks = await getArtworksCollection();
-        const newComment = {
-            id: new ObjectId(),
+        
+        // Moderate comment with AI
+        const moderationResult = await moderateComment({ commentText: parsed.data.commentText });
+
+        const newComment: Omit<Comment, 'replies'> = {
+            id: new ObjectId().toString(),
             text: parsed.data.commentText,
             createdAt: new Date(),
-            parentId: parentId ? new ObjectId(parentId) : null,
+            parentId: parentId ? new ObjectId(parentId).toString() : null,
+            isPendingModeration: !moderationResult.isAppropriate,
+            moderationReason: moderationResult.reason || null,
         };
 
         const result = await artworks.findOneAndUpdate(
             { _id: new ObjectId(artworkId) },
-            { $push: { comments: newComment } },
+            { $push: { comments: { ...newComment, id: new ObjectId(newComment.id) } } },
             { returnDocument: 'after' }
         );
 
@@ -306,12 +334,45 @@ export async function addComment(artworkId: string, formData: FormData, parentId
         }
         
         revalidatePath(`/karya/${artworkId}`);
+        revalidatePath(`/admin`);
 
         return { success: true, updatedArtwork: docToArtwork(result) };
 
     } catch (error) {
         console.error("Gagal menambahkan komentar:", error);
         return { success: false, message: "Terjadi kesalahan pada server." };
+    }
+}
+
+export async function approveComment(artworkId: string, commentId: string) {
+    try {
+        const artworks = await getArtworksCollection();
+        await artworks.updateOne(
+            { _id: new ObjectId(artworkId), "comments.id": new ObjectId(commentId) },
+            { $set: { "comments.$.isPendingModeration": false, "comments.$.moderationReason": null } }
+        );
+        revalidatePath(`/karya/${artworkId}`);
+        revalidatePath('/admin');
+        return { success: true };
+    } catch (error) {
+        console.error("Gagal menyetujui komentar:", error);
+        return { success: false, message: "Gagal menyetujui komentar." };
+    }
+}
+
+export async function deleteCommentById(artworkId: string, commentId: string) {
+    try {
+        const artworks = await getArtworksCollection();
+        await artworks.updateOne(
+            { _id: new ObjectId(artworkId) },
+            { $pull: { comments: { id: new ObjectId(commentId) } } }
+        );
+        revalidatePath(`/karya/${artworkId}`);
+        revalidatePath('/admin');
+        return { success: true };
+    } catch (error) {
+        console.error("Gagal menghapus komentar:", error);
+        return { success: false, message: "Gagal menghapus komentar." };
     }
 }
 

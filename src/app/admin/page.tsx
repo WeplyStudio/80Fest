@@ -12,8 +12,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Lock } from "lucide-react";
-import { getArtworks, getSubmissionStatus, getLeaderboardStatus, getContestInfo, getAnnouncementBanner } from "@/lib/actions";
-import { Artwork, ContestInfoData, AnnouncementBannerData } from "@/lib/types";
+import { getArtworks, getSubmissionStatus, getLeaderboardStatus, getContestInfo, getAnnouncementBanner, getPendingComments } from "@/lib/actions";
+import { Artwork, ContestInfoData, AnnouncementBannerData, Comment } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const loginSchema = z.object({
@@ -33,6 +33,7 @@ export default function AdminPage() {
   const [leaderboardStatus, setLeaderboardStatus] = useState<boolean | null>(null);
   const [contestInfo, setContestInfo] = useState<ContestInfoData | null>(null);
   const [bannerInfo, setBannerInfo] = useState<AnnouncementBannerData | null>(null);
+  const [pendingComments, setPendingComments] = useState<Comment[] | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -61,13 +62,15 @@ export default function AdminPage() {
         getSubmissionStatus(),
         getLeaderboardStatus(),
         getContestInfo(),
-        getAnnouncementBanner()
-      ]).then(([artworksData, submissionStatusData, leaderboardStatusData, contestInfoData, bannerData]) => {
+        getAnnouncementBanner(),
+        getPendingComments(),
+      ]).then(([artworksData, submissionStatusData, leaderboardStatusData, contestInfoData, bannerData, commentsData]) => {
             setArtworks(artworksData);
             setSubmissionStatus(submissionStatusData);
             setLeaderboardStatus(leaderboardStatusData);
             setContestInfo(contestInfoData);
             setBannerInfo(bannerData);
+            setPendingComments(commentsData);
             setLoading(false);
       }).catch(err => {
             console.error(err);
@@ -101,11 +104,12 @@ export default function AdminPage() {
     setArtworks(null);
     setSubmissionStatus(null);
     setLeaderboardStatus(null);
+    setPendingComments(null);
     setLoading(false);
   }
 
   if (isAuthenticated) {
-     if (loading || !artworks || submissionStatus === null || leaderboardStatus === null || !contestInfo || !bannerInfo) {
+     if (loading || !artworks || submissionStatus === null || leaderboardStatus === null || !contestInfo || !bannerInfo || !pendingComments) {
       return (
         <div className="space-y-4">
           <div>
@@ -127,6 +131,7 @@ export default function AdminPage() {
         initialLeaderboardStatus={leaderboardStatus} 
         initialContestInfo={contestInfo}
         initialBannerInfo={bannerInfo}
+        initialPendingComments={pendingComments}
         onLogout={handleLogout}
     />;
   }

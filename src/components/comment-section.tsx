@@ -23,18 +23,17 @@ export function CommentSection({ artwork, onArtworkUpdate }: CommentSectionProps
     const [replyTo, setReplyTo] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     
-    // The optimistic state now manages a flat array of all comments
+    // Filter out pending comments for public view
+    const approvedComments = useMemo(() => {
+        return artwork.comments.filter(comment => !comment.isPendingModeration);
+    }, [artwork.comments]);
+    
     const [optimisticComments, setOptimisticComments] = useOptimistic<Comment[], { text: string; parentId: string | null }>(
-        artwork.comments,
+        approvedComments,
         (state, { text, parentId }) => {
-            const newComment: Comment = {
-                id: Math.random().toString(), // temporary ID
-                text: text,
-                createdAt: new Date(),
-                parentId: parentId,
-                replies: [] // Replies will be constructed during render
-            };
-            return [...state, newComment];
+            // Optimistic updates won't show pending comments, as they might not be approved.
+            // The user gets a toast message instead.
+            return state;
         }
     );
 
@@ -45,43 +44,40 @@ export function CommentSection({ artwork, onArtworkUpdate }: CommentSectionProps
         setIsSubmitting(true);
         const currentReplyTo = replyTo;
         
-        // Reset reply state immediately
         setReplyTo(null);
         if (formRef.current) {
             (formRef.current.querySelector('textarea') as HTMLTextAreaElement).value = '';
         }
-
-        setOptimisticComments({ text: commentText, parentId: currentReplyTo });
         
         const result = await addComment(artwork.id, formData, currentReplyTo);
         
         if (result.success && result.updatedArtwork) {
+            const newComment = result.updatedArtwork.comments[result.updatedArtwork.comments.length - 1];
+            if (newComment.isPendingModeration) {
+                 toast({ title: 'Komentar Terkirim!', description: 'Komentar Anda akan ditinjau oleh admin sebelum ditampilkan.' });
+            } else {
+                 toast({ title: 'Komentar berhasil dikirim!' });
+            }
             onArtworkUpdate(result.updatedArtwork);
-            toast({ title: 'Komentar berhasil dikirim!' });
         } else {
             toast({
                 variant: 'destructive',
                 title: 'Gagal mengirim komentar',
                 description: result.message,
             });
-            // Revert optimistic update if server failed
-            onArtworkUpdate(artwork); 
         }
         setIsSubmitting(false);
     };
     
-    // Memoize the comment tree construction
     const commentTree = useMemo(() => {
         const commentsById = new Map<string, Comment & { replies: Comment[] }>();
         
-        // Initialize all comments in the map
         optimisticComments.forEach(comment => {
             commentsById.set(comment.id, { ...comment, replies: [] });
         });
 
         const rootComments: (Comment & { replies: Comment[] })[] = [];
         
-        // Build the tree structure
         commentsById.forEach(comment => {
             if (comment.parentId && commentsById.has(comment.parentId)) {
                 commentsById.get(comment.parentId)!.replies.push(comment);
@@ -90,7 +86,6 @@ export function CommentSection({ artwork, onArtworkUpdate }: CommentSectionProps
             }
         });
 
-        // Sort root comments by date
         return rootComments.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }, [optimisticComments]);
 
