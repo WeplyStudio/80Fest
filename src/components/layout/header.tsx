@@ -11,8 +11,6 @@ import { Menu, Sparkles } from "lucide-react";
 const navLinks = [
   { href: "/", label: "Beranda" },
   { href: "/leaderboard", label: "Peringkat" },
-  { href: "/judge", label: "Juri" },
-  { href: "/admin", label: "Admin" },
 ];
 
 export function Header() {
