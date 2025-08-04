@@ -57,6 +57,7 @@ export type AnnouncementBannerData = {
 export type FormFieldDefinition = {
     name: string; // Will be used as the key in customData
     label: string;
-    type: 'text'; // Currently only supporting text fields
+    type: 'text' | 'select' | 'file';
     required: boolean;
+    options?: string[]; // For select type
 };

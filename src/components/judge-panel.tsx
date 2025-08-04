@@ -3,7 +3,7 @@
 
 import { useState, useMemo } from "react";
 import Image from "next/image";
-import type { Artwork, JudgeScore } from "@/lib/types";
+import type { Artwork, JudgeScore, FormFieldDefinition } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -37,7 +37,7 @@ import React from "react";
 import { Badge } from "./ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "./ui/textarea";
-import { disqualifyArtwork } from "@/lib/actions";
+import { disqualifyArtwork, getFormFields } from "@/lib/actions";
 
 interface JudgePanelProps {
     initialArtworks: Artwork[];
@@ -45,10 +45,27 @@ interface JudgePanelProps {
     onLogout: () => void;
 }
 
+function parseCustomData(value: string): { url?: string; name?: string } | null {
+  try {
+    const parsed = JSON.parse(value);
+    if (parsed.url && parsed.name) {
+      return parsed;
+    }
+    return null;
+  } catch (e) {
+    return null;
+  }
+}
+
 export function JudgePanel({ initialArtworks, judgeName, onLogout }: JudgePanelProps) {
   const [artworks, setArtworks] = useState<Artwork[]>(initialArtworks);
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
+  const [formFields, setFormFields] = useState<FormFieldDefinition[]>([]);
+
+  React.useEffect(() => {
+    getFormFields().then(setFormFields);
+  }, []);
 
   const filteredArtworks = useMemo(() => {
     return artworks.filter(artwork => 
@@ -177,13 +194,28 @@ export function JudgePanel({ initialArtworks, judgeName, onLogout }: JudgePanelP
                                    {artwork.customData && Object.keys(artwork.customData).length > 0 && (
                                      <div>
                                         <h3 className="font-semibold font-headline mb-2">Informasi Tambahan</h3>
-                                        <div className="space-y-2">
-                                            {Object.entries(artwork.customData).map(([key, value]) => (
-                                                <div key={key}>
-                                                    <p className="text-sm font-medium">{key.replace(/_/g, ' ')}</p>
-                                                    <p className="text-muted-foreground text-sm">{value}</p>
-                                                </div>
-                                            ))}
+                                        <div className="space-y-3">
+                                             {formFields.map(field => {
+                                                const value = artwork.customData[field.name];
+                                                if (!value) return null;
+                                                
+                                                const fileData = field.type === 'file' ? parseCustomData(value) : null;
+
+                                                return (
+                                                    <div key={field.name}>
+                                                        <p className="text-sm font-medium">{field.label}</p>
+                                                        {fileData ? (
+                                                            <Button asChild variant="secondary" size="sm" className="mt-1">
+                                                                <a href={fileData.url} download={fileData.name} target="_blank" rel="noopener noreferrer">
+                                                                    Unduh {fileData.name}
+                                                                </a>
+                                                            </Button>
+                                                        ) : (
+                                                            <p className="text-muted-foreground text-sm">{value}</p>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                   )}

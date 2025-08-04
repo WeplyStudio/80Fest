@@ -40,10 +40,6 @@ const baseSchema = z.object({
   artworkFile: z
     .custom<FileList>()
     .refine((files) => files?.length === 1, "File poster harus diupload.")
-    .refine(
-      (files) => ["image/png", "image/jpeg"].includes(files?.[0]?.type),
-      "Format file harus PNG atau JPG."
-    ),
 });
 
 
@@ -54,15 +50,30 @@ const buildSchemaAndDefaults = (fields: FormFieldDefinition[]) => {
     const customDefaults: Record<string, any> = {};
 
     fields.forEach(field => {
-        let fieldSchema: z.ZodType<any, any> = z.string();
-        if (field.required) {
-            fieldSchema = fieldSchema.min(1, `${field.label} tidak boleh kosong.`);
-        } else {
-            fieldSchema = fieldSchema.optional();
-        }
         const fieldName = `custom_${field.name}`;
-        customFieldsShape[fieldName] = fieldSchema;
-        customDefaults[fieldName] = "";
+        if (field.type === 'file') {
+            let fileSchema = z.custom<FileList>().optional();
+            if (field.required) {
+                fileSchema = fileSchema.refine(files => files && files.length > 0, `${field.label} harus diupload.`);
+            }
+            customFieldsShape[fieldName] = fileSchema;
+            customDefaults[fieldName] = undefined;
+        } else {
+            let fieldSchema: z.ZodType<any, any> = z.string();
+            if (field.type === 'select' && field.options) {
+                const options = field.options as [string, ...string[]];
+                if(options.length > 0) {
+                   fieldSchema = z.enum(options);
+                }
+            }
+            if (field.required) {
+                fieldSchema = fieldSchema.min(1, `${field.label} tidak boleh kosong.`);
+            } else {
+                fieldSchema = fieldSchema.optional();
+            }
+            customFieldsShape[fieldName] = fieldSchema;
+            customDefaults[fieldName] = field.type === 'select' ? undefined : "";
+        }
     });
 
     const fullSchema = baseSchema.extend(customFieldsShape);
@@ -82,6 +93,7 @@ const buildSchemaAndDefaults = (fields: FormFieldDefinition[]) => {
 export default function SubmitPage() {
   const [step, setStep] = useState<Step>("form");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [customFilePreviews, setCustomFilePreviews] = useState<Record<string, string>>({});
   const { toast } = useToast();
   const router = useRouter();
   const [submissionStatus, setSubmissionStatus] = useState<boolean | null>(null);
@@ -94,6 +106,10 @@ export default function SubmitPage() {
     mode: "onChange",
     defaultValues: defaults,
   });
+  
+  useEffect(() => {
+     form.reset(defaults);
+  }, [form, defaults]);
 
   useEffect(() => {
     Promise.all([getSubmissionStatus(), getFormFields()])
@@ -116,8 +132,19 @@ export default function SubmitPage() {
     if (data.artworkFile && data.artworkFile[0]) {
       const url = URL.createObjectURL(data.artworkFile[0]);
       setPreviewUrl(url);
-      setStep("preview");
     }
+
+    const filePreviews: Record<string, string> = {};
+    formFields?.forEach(field => {
+        if (field.type === 'file') {
+            const fileList = data[`custom_${field.name}`] as FileList | undefined;
+            if (fileList && fileList[0]) {
+                filePreviews[field.name] = fileList[0].name;
+            }
+        }
+    });
+    setCustomFilePreviews(filePreviews);
+    setStep("preview");
   };
   
   const handleBackToForm = () => {
@@ -126,6 +153,7 @@ export default function SubmitPage() {
       URL.revokeObjectURL(previewUrl);
       setPreviewUrl(null);
     }
+    setCustomFilePreviews({});
   };
 
   async function onFinalSubmit() {
@@ -133,38 +161,37 @@ export default function SubmitPage() {
     const data = form.getValues();
     const formData = new FormData();
 
-    let finalFile = data.artworkFile?.[0];
+    let artworkFile = data.artworkFile?.[0];
 
-    if (!finalFile) {
+    if (!artworkFile) {
       toast({
         variant: "destructive",
-        title: "File Tidak Ditemukan",
-        description: "Silakan pilih file karya untuk diunggah.",
+        title: "File Poster Tidak Ditemukan",
+        description: "Silakan pilih file poster utama untuk diunggah.",
       });
       setStep("form");
       return;
     }
 
     // Compress image if it's larger than MAX_FILE_SIZE_MB
-    if (finalFile.size > MAX_FILE_SIZE_BYTES) {
+    if (artworkFile.size > MAX_FILE_SIZE_BYTES) {
         toast({
             title: 'Ukuran file besar terdeteksi',
-            description: `File Anda sedang dikompres menjadi di bawah ${MAX_FILE_SIZE_MB}MB. Mohon tunggu...`
+            description: `File Anda (${artworkFile.name}) sedang dikompres. Mohon tunggu...`
         });
         try {
-            const options = {
+            const compressedFile = await imageCompression(artworkFile, {
                 maxSizeMB: MAX_FILE_SIZE_MB,
                 maxWidthOrHeight: 1920,
                 useWebWorker: true,
-            };
-            const compressedFile = await imageCompression(finalFile, options);
-            finalFile = new File([compressedFile], finalFile.name, { type: finalFile.type });
+            });
+            artworkFile = new File([compressedFile], artworkFile.name, { type: artworkFile.type });
         } catch (error) {
             console.error("Image compression error: ", error);
             toast({
                 variant: "destructive",
                 title: "Gagal Kompres Gambar",
-                description: "Terjadi kesalahan saat mengompres gambar. Silakan coba unggah file yang lebih kecil.",
+                description: "Silakan coba unggah file yang lebih kecil.",
             });
             setStep("preview");
             return;
@@ -176,18 +203,24 @@ export default function SubmitPage() {
     formData.append('class', data.class);
     formData.append('title', data.title);
     formData.append('description', data.description);
-    formData.append('artworkFile', finalFile, finalFile.name);
+    formData.append('artworkFile', artworkFile, artworkFile.name);
 
     // Append custom fields
-    const customData: Record<string, string> = {};
     formFields?.forEach(field => {
-        const value = data[`custom_${field.name}`];
-        if (value !== undefined && value !== null && value !== '') {
-            customData[field.name] = String(value);
+        const fieldName = `custom_${field.name}`;
+        if (field.type === 'file') {
+            const fileList = data[fieldName] as FileList | undefined;
+            if (fileList && fileList[0]) {
+                formData.append(fieldName, fileList[0], fileList[0].name);
+            }
+        } else {
+             const value = data[fieldName];
+            if (value !== undefined && value !== null && value !== '') {
+                formData.append(fieldName, String(value));
+            }
         }
     });
-    formData.append('customData', JSON.stringify(customData));
-
+    
     const result = await submitArtwork(formData);
 
     if (result.success) {
@@ -240,6 +273,77 @@ export default function SubmitPage() {
 
   const formData = form.watch();
 
+  const renderCustomField = (field: FormFieldDefinition) => {
+    const fieldName = `custom_${field.name}` as const;
+    
+    if (field.type === 'file') {
+        return (
+             <FormField
+                key={field.name}
+                control={form.control}
+                name={fieldName}
+                render={({ field: { onChange, value, ...rest } }) => (
+                     <FormItem>
+                        <FormLabel>{field.label} {field.required ? '' : <span className="text-muted-foreground text-xs">(Opsional)</span>}</FormLabel>
+                        <FormControl>
+                            <Input
+                                type="file"
+                                onChange={(e) => onChange(e.target.files)}
+                                {...rest}
+                                />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}
+             />
+        )
+    }
+
+    if (field.type === 'select' && field.options) {
+        return (
+             <FormField
+                key={field.name}
+                control={form.control}
+                name={fieldName}
+                render={({ field: fieldProps }) => (
+                    <FormItem>
+                        <FormLabel>{field.label} {field.required ? '' : <span className="text-muted-foreground text-xs">(Opsional)</span>}</FormLabel>
+                        <Select onValueChange={fieldProps.onChange} defaultValue={fieldProps.value}>
+                            <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder={`Pilih ${field.label.toLowerCase()}`} />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {field.options?.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+        )
+    }
+
+    // Default to text input
+    return (
+         <FormField
+            key={field.name}
+            control={form.control}
+            name={fieldName}
+            render={({ field: fieldProps }) => (
+                <FormItem>
+                    <FormLabel>{field.label} {field.required ? '' : <span className="text-muted-foreground text-xs">(Opsional)</span>}</FormLabel>
+                    <FormControl>
+                        <Input placeholder={`Masukkan ${field.label.toLowerCase()}...`} {...fieldProps} />
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+            )}
+        />
+    )
+  }
+
   return (
     <div className="max-w-4xl mx-auto">
       {step !== "preview" ? (
@@ -263,6 +367,9 @@ export default function SubmitPage() {
           <form onSubmit={form.handleSubmit(handlePreview)}>
             <div className={step === "form" ? "block" : "hidden"}>
               <CardContent className="pt-6 space-y-6">
+                 <CardHeader className="p-0 mb-4">
+                    <CardTitle className="text-xl font-headline">Informasi Dasar</CardTitle>
+                </CardHeader>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField
                     control={form.control}
@@ -328,31 +435,13 @@ export default function SubmitPage() {
                     </FormItem>
                 )}
                 />
-                
-                {/* Dynamic Custom Fields */}
-                {formFields?.map(customField => (
-                     <FormField
-                        key={customField.name}
-                        control={form.control}
-                        name={`custom_${customField.name}`}
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>{customField.label} {customField.required ? '' : <span className="text-muted-foreground text-xs">(Opsional)</span>}</FormLabel>
-                                <FormControl>
-                                    <Input placeholder={`Masukkan ${customField.label.toLowerCase()}...`} {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                ))}
 
                 <FormField
                 control={form.control}
                 name="artworkFile"
                 render={({ field: { onChange, value, ...rest } }) => (
                     <FormItem>
-                    <FormLabel>File Poster (PNG/JPG, maks {MAX_FILE_SIZE_MB}MB)</FormLabel>
+                    <FormLabel>File Poster Utama (PNG/JPG, maks {MAX_FILE_SIZE_MB}MB)</FormLabel>
                     <FormControl>
                         <Input
                         type="file"
@@ -365,6 +454,15 @@ export default function SubmitPage() {
                     </FormItem>
                 )}
                 />
+
+                {/* Dynamic Custom Fields */}
+                 {formFields && formFields.length > 0 && (
+                    <CardHeader className="p-0 mt-8 mb-4">
+                        <CardTitle className="text-xl font-headline">Informasi Tambahan</CardTitle>
+                    </CardHeader>
+                 )}
+                {formFields?.map(customField => renderCustomField(customField))}
+
               </CardContent>
               <CardContent className="flex justify-end pt-2">
                 <Button type="submit">
@@ -407,22 +505,31 @@ export default function SubmitPage() {
                             <h3 className="text-sm font-medium text-muted-foreground">Deskripsi</h3>
                             <p className="text-sm leading-relaxed">{formData.description}</p>
                         </div>
+                         <div>
+                            <h3 className="text-sm font-medium text-muted-foreground">File Poster Utama</h3>
+                            <p className="text-sm text-muted-foreground">{formData.artworkFile?.[0]?.name}</p>
+                        </div>
                         {formFields?.map(field => {
                             const value = formData[`custom_${field.name}`];
-                            if (value) {
+                            if (!value) return null;
+
+                            let displayValue: string;
+                             if (field.type === 'file' && value instanceof FileList) {
+                                displayValue = value[0]?.name || 'Tidak ada file';
+                            } else {
+                                displayValue = String(value);
+                            }
+                            
+                            if (displayValue && displayValue !== 'Tidak ada file') {
                                 return (
                                     <div key={field.name}>
                                         <h3 className="text-sm font-medium text-muted-foreground">{field.label}</h3>
-                                        <p className="text-sm leading-relaxed">{value}</p>
+                                        <p className="text-sm leading-relaxed">{displayValue}</p>
                                     </div>
                                 )
                             }
                             return null;
                         })}
-                         <div>
-                            <h3 className="text-sm font-medium text-muted-foreground">Nama File</h3>
-                            <p className="text-sm text-muted-foreground">{formData.artworkFile?.[0]?.name}</p>
-                        </div>
                     </div>
                 </div>
                 <div className="flex flex-col-reverse sm:flex-row-reverse sm:justify-between items-center gap-4">

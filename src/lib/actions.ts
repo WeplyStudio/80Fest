@@ -13,6 +13,7 @@ function revalidateAll() {
     revalidatePath("/", "layout");
     revalidatePath("/submit");
     revalidatePath("/admin");
+    revalidatePath("/judge", "layout");
 }
 
 const classes = ["VII", "VIII", "IX"] as const;
@@ -126,69 +127,74 @@ export async function submitArtwork(formData: FormData) {
     return { success: false, message: 'Pendaftaran sudah ditutup.' };
   }
   
-  const rawFormData = Object.fromEntries(formData.entries());
-  
-  // Handle file
-  const file = formData.get('artworkFile') as File | null;
-  if (!file || file.size === 0) {
-      return { success: false, message: 'File poster tidak valid atau kosong.' };
-  }
-  if (file.size > 10 * 1024 * 1024) { // 10MB limit on server
-      return { success: false, message: 'Ukuran file maksimal 10MB.' };
-  }
-  if (!['image/png', 'image/jpeg'].includes(file.type)) {
-      return { success: false, message: 'Format file harus PNG atau JPG.' };
-  }
-
-  // Handle custom data
-  const customDataString = formData.get('customData') as string | null;
-  let customData: Record<string, string> = {};
-  if (customDataString) {
-    try {
-        customData = JSON.parse(customDataString);
-    } catch (e) {
-        return { success: false, message: 'Data tambahan tidak valid.' };
-    }
-  }
-
-  // Dynamically build validation schema
   const formFields = await getFormFields();
-  const customFieldsShape: Record<string, z.ZodType<any, any>> = {};
-  formFields.forEach(field => {
-    let fieldSchema: z.ZodType<any, any> = z.string();
-    if (field.required) {
-      fieldSchema = fieldSchema.min(1, `${field.label} tidak boleh kosong.`);
-    } else {
-      fieldSchema = fieldSchema.optional().or(z.literal(''));
-    }
-    customFieldsShape[field.name] = fieldSchema;
-  });
+  const rawFormData = Object.fromEntries(formData.entries());
+
+  // --- Base fields validation ---
+  const parsedBase = baseSubmissionSchema.safeParse(rawFormData);
+  if (!parsedBase.success) {
+      return { success: false, message: 'Data dasar tidak valid. Periksa nama, kelas, judul, dan deskripsi.' };
+  }
   
-  const dynamicSubmissionSchema = baseSubmissionSchema.extend({
-      customData: z.object(customFieldsShape).optional()
-  });
+  const artworkFile = formData.get('artworkFile') as File | null;
+  if (!artworkFile || artworkFile.size === 0) {
+      return { success: false, message: 'File poster utama harus diunggah.' };
+  }
+  if (artworkFile.size > 10 * 1024 * 1024) { // 10MB limit on server
+      return { success: false, message: 'Ukuran file poster utama maksimal 10MB.' };
+  }
+  if (!['image/png', 'image/jpeg'].includes(artworkFile.type)) {
+      return { success: false, message: 'Format file poster utama harus PNG atau JPG.' };
+  }
+  
+  const customData: Record<string, string> = {};
+  const customFiles: Record<string, File> = {};
 
-  const parsed = dynamicSubmissionSchema.safeParse({
-      name: rawFormData.name,
-      class: rawFormData.class,
-      title: rawFormData.title,
-      description: rawFormData.description,
-      customData: customData
-  });
+  // --- Custom fields validation and data preparation ---
+  for (const field of formFields) {
+      const fieldName = `custom_${field.name}`;
+      const value = formData.get(fieldName);
 
-  if (!parsed.success) {
-      console.log(parsed.error.flatten());
-      return { success: false, message: 'Data tidak valid. Periksa kembali semua kolom.' };
+      if (field.type === 'file') {
+          if (value instanceof File && value.size > 0) {
+              if(value.size > 10 * 1024 * 1024) { // 10MB limit
+                  return { success: false, message: `Ukuran file untuk ${field.label} maksimal 10MB.` };
+              }
+              customFiles[field.name] = value;
+          } else if (field.required) {
+              return { success: false, message: `${field.label} harus diunggah.` };
+          }
+      } else {
+          const stringValue = typeof value === 'string' ? value : '';
+          if (field.required && !stringValue) {
+              return { success: false, message: `${field.label} harus diisi.` };
+          }
+          if (field.type === 'select' && field.required && !field.options?.includes(stringValue)) {
+              return { success: false, message: `Pilihan tidak valid untuk ${field.label}.`};
+          }
+          if (stringValue) {
+              customData[field.name] = stringValue;
+          }
+      }
   }
 
   try {
     const artworks = await getArtworksCollection();
-    const imageUrl = await fileToDataUri(file);
+    
+    // Upload custom files and get their data URIs
+    for (const fieldName in customFiles) {
+        const file = customFiles[fieldName];
+        const dataUri = await fileToDataUri(file);
+        // Store the data URI along with the original filename for context
+        customData[fieldName] = JSON.stringify({ url: dataUri, name: file.name });
+    }
+
+    const mainImageUrl = await fileToDataUri(artworkFile);
 
     await artworks.insertOne({
-      ...parsed.data,
-      customData: parsed.data.customData || {},
-      imageUrl: imageUrl,
+      ...parsedBase.data,
+      customData: customData,
+      imageUrl: mainImageUrl,
       scores: [],
       totalPoints: 0,
       likes: 0,
@@ -645,10 +651,19 @@ export async function getFormFields(): Promise<FormFieldDefinition[]> {
 export async function updateFormFields(fields: FormFieldDefinition[]) {
     // Basic validation on server
     const fieldSchema = z.array(z.object({
-        name: z.string().min(1).regex(/^[a-z0-9_]+$/, "Nama kolom hanya boleh berisi huruf kecil, angka, dan garis bawah."),
-        label: z.string().min(1),
-        type: z.literal('text'), // For now only supporting text fields
-        required: z.boolean()
+        name: z.string().min(1, "Nama kolom harus diisi.").regex(/^[a-z0-9_]+$/, "Nama kolom hanya boleh berisi huruf kecil, angka, dan garis bawah."),
+        label: z.string().min(1, "Label harus diisi."),
+        type: z.enum(['text', 'select', 'file']),
+        required: z.boolean(),
+        options: z.array(z.string()).optional(),
+    }).refine(data => {
+        if (data.type === 'select') {
+            return Array.isArray(data.options) && data.options.length > 0 && data.options.every(opt => typeof opt === 'string' && opt.length > 0);
+        }
+        return true;
+    }, {
+        message: 'Pilihan harus tersedia untuk tipe select.',
+        path: ['options'],
     }));
 
     const parsed = fieldSchema.safeParse(fields);
