@@ -12,7 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Lock } from "lucide-react";
-import { getArtworks, getSubmissionStatus, getLeaderboardStatus, getContestInfo, getAnnouncementBanner, getPendingComments, getMaintenanceStatus, getFormFields } from "@/lib/actions";
+import { getArtworks, getSubmissionStatus, getLeaderboardStatus, getContestInfo, getAnnouncementBanner, getPendingComments, getFormFields, getGalleryStatus } from "@/lib/actions";
 import { Artwork, ContestInfoData, AnnouncementBannerData, Comment, FormFieldDefinition } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -31,7 +31,7 @@ export default function AdminPage() {
   const [artworks, setArtworks] = useState<Artwork[] | null>(null);
   const [submissionStatus, setSubmissionStatus] = useState<boolean | null>(null);
   const [leaderboardStatus, setLeaderboardStatus] = useState<boolean | null>(null);
-  const [maintenanceStatus, setMaintenanceStatus] = useState<boolean | null>(null);
+  const [galleryStatus, setGalleryStatus] = useState<boolean | null>(null);
   const [contestInfo, setContestInfo] = useState<ContestInfoData | null>(null);
   const [bannerInfo, setBannerInfo] = useState<AnnouncementBannerData | null>(null);
   const [pendingComments, setPendingComments] = useState<Comment[] | null>(null);
@@ -66,17 +66,17 @@ export default function AdminPage() {
         getContestInfo(),
         getAnnouncementBanner(),
         getPendingComments(),
-        getMaintenanceStatus(),
         getFormFields(),
-      ]).then(([artworksData, submissionStatusData, leaderboardStatusData, contestInfoData, bannerData, commentsData, maintenanceData, formFieldsData]) => {
+        getGalleryStatus(),
+      ]).then(([artworksData, submissionStatusData, leaderboardStatusData, contestInfoData, bannerData, commentsData, formFieldsData, galleryStatusData]) => {
             setArtworks(artworksData);
             setSubmissionStatus(submissionStatusData);
             setLeaderboardStatus(leaderboardStatusData);
             setContestInfo(contestInfoData);
             setBannerInfo(bannerData);
             setPendingComments(commentsData);
-            setMaintenanceStatus(maintenanceData);
             setFormFields(formFieldsData);
+            setGalleryStatus(galleryStatusData);
             setLoading(false);
       }).catch(err => {
             console.error(err);
@@ -110,14 +110,14 @@ export default function AdminPage() {
     setArtworks(null);
     setSubmissionStatus(null);
     setLeaderboardStatus(null);
+    setGalleryStatus(null);
     setPendingComments(null);
-    setMaintenanceStatus(null);
     setFormFields(null);
     setLoading(false);
   }
 
   if (isAuthenticated) {
-     if (loading || !artworks || submissionStatus === null || leaderboardStatus === null || !contestInfo || !bannerInfo || !pendingComments || maintenanceStatus === null || !formFields) {
+     if (loading || !artworks || submissionStatus === null || leaderboardStatus === null || galleryStatus === null || !contestInfo || !bannerInfo || !pendingComments || !formFields) {
       return (
         <div className="space-y-4">
           <div>
@@ -137,7 +137,7 @@ export default function AdminPage() {
         initialArtworks={artworks} 
         initialSubmissionStatus={submissionStatus} 
         initialLeaderboardStatus={leaderboardStatus}
-        initialMaintenanceStatus={maintenanceStatus}
+        initialGalleryStatus={galleryStatus}
         initialContestInfo={contestInfo}
         initialBannerInfo={bannerInfo}
         initialPendingComments={pendingComments}

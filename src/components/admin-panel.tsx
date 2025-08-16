@@ -32,7 +32,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Eye, MoreHorizontal, Trash, GalleryVertical, GalleryVerticalEnd, Pencil, Star, Users, Layers, MessageCircle, LogOut, ShieldX, Check, X, AlertTriangle, Hammer } from "lucide-react";
+import { Eye, MoreHorizontal, Trash, Pencil, Star, Users, Layers, MessageCircle, LogOut, ShieldX, Check, X, AlertTriangle, GalleryVertical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -45,7 +45,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { deleteArtwork, toggleGalleryStatus, setSubmissionStatus, setLeaderboardStatus, disqualifyArtwork, approveComment, deleteCommentById, setMaintenanceStatus } from "@/lib/actions";
+import { deleteArtwork, setSubmissionStatus, setLeaderboardStatus, disqualifyArtwork, approveComment, deleteCommentById, setGalleryStatus } from "@/lib/actions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Switch } from "./ui/switch";
 import { Input } from "./ui/input";
@@ -61,7 +61,7 @@ interface AdminPanelProps {
     initialArtworks: Artwork[];
     initialSubmissionStatus: boolean;
     initialLeaderboardStatus: boolean;
-    initialMaintenanceStatus: boolean;
+    initialGalleryStatus: boolean;
     initialContestInfo: ContestInfoData;
     initialBannerInfo: AnnouncementBannerData;
     initialPendingComments: Comment[];
@@ -86,7 +86,7 @@ export function AdminPanel({
     initialArtworks, 
     initialSubmissionStatus, 
     initialLeaderboardStatus, 
-    initialMaintenanceStatus,
+    initialGalleryStatus,
     initialContestInfo, 
     initialBannerInfo, 
     initialPendingComments, 
@@ -96,7 +96,7 @@ export function AdminPanel({
   const [artworks, setArtworks] = useState<Artwork[]>(initialArtworks);
   const [submissionOpen, setSubmissionOpen] = useState(initialSubmissionStatus);
   const [leaderboardVisible, setLeaderboardVisible] = useState(initialLeaderboardStatus);
-  const [maintenanceActive, setMaintenanceActive] = useState(initialMaintenanceStatus);
+  const [galleryVisible, setGalleryVisible] = useState(initialGalleryStatus);
   const [pendingComments, setPendingComments] = useState<Comment[]>(initialPendingComments);
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
@@ -132,19 +132,6 @@ export function AdminPanel({
         currentArtworks.map(art => art.id === updatedArtwork.id ? updatedArtwork : art)
     );
   }
-
-  const handleToggleGallery = async (artworkId: string, currentStatus: boolean) => {
-    const result = await toggleGalleryStatus(artworkId, currentStatus);
-    if (result.success) {
-        setArtworks(prev => prev.map(art => art.id === artworkId ? { ...art, isInGallery: !currentStatus } : art));
-        toast({
-            title: "Status Galeri Diperbarui",
-            description: `Karya telah ${!currentStatus ? 'ditambahkan ke' : 'dihapus dari'} galeri.`
-        });
-    } else {
-        toast({ variant: 'destructive', title: "Gagal", description: result.message });
-    }
-  };
 
   const handleDelete = async (artworkId: string) => {
     const result = await deleteArtwork(artworkId);
@@ -206,13 +193,13 @@ export function AdminPanel({
     }
   }
   
-  const handleMaintenanceToggle = async (checked: boolean) => {
-    const result = await setMaintenanceStatus(checked);
+  const handleGalleryToggle = async (checked: boolean) => {
+    const result = await setGalleryStatus(checked);
     if (result.success) {
-        setMaintenanceActive(result.newState);
+        setGalleryVisible(result.newState);
         toast({
-            title: `Mode Pemeliharaan ${result.newState ? "Diaktifkan" : "Dinonaktifkan"}`,
-            description: `Situs publik sekarang ${result.newState ? "tidak dapat" : "dapat"} diakses.`,
+            title: `Galeri Karya ${result.newState ? "Ditampilkan" : "Disembunyikan"}`,
+            description: `Galeri di halaman utama sekarang ${result.newState ? "bisa" : "tidak bisa"} dilihat publik.`,
         });
     } else {
         toast({ variant: 'destructive', title: "Gagal", description: result.message });
@@ -222,9 +209,6 @@ export function AdminPanel({
   const getStatusBadge = (artwork: Artwork) => {
     if (artwork.isDisqualified) {
         return <Badge variant="destructive" className="bg-red-900/50 text-red-300 border-red-500/30">{artwork.disqualificationReason}</Badge>
-    }
-    if (artwork.isInGallery) {
-        return <Badge variant="secondary">Di Galeri</Badge>
     }
     return null;
   }
@@ -324,7 +308,7 @@ export function AdminPanel({
         <Card>
             <CardHeader>
                 <CardTitle className="font-headline">Pengaturan Global</CardTitle>
-                <CardDescription>Atur status pendaftaran, visibilitas hasil, dan mode pemeliharaan.</CardDescription>
+                <CardDescription>Atur status pendaftaran, visibilitas hasil, dan galeri.</CardDescription>
             </CardHeader>
             <CardContent className="grid sm:grid-cols-1 gap-4">
                 <div className="flex items-center space-x-4 rounded-md border p-4">
@@ -353,17 +337,17 @@ export function AdminPanel({
                         id="leaderboard-status"
                     />
                 </div>
-                 <div className="flex items-center space-x-4 rounded-md border p-4 border-amber-500/50 bg-amber-500/10">
+                 <div className="flex items-center space-x-4 rounded-md border p-4">
                     <div className="flex-1 space-y-1">
-                        <p className="text-sm font-medium leading-none flex items-center gap-2"><Hammer />Mode Pemeliharaan</p>
+                        <p className="text-sm font-medium leading-none flex items-center gap-2"><GalleryVertical />Tampilkan Galeri Karya</p>
                         <p className="text-sm text-muted-foreground">
-                            Jika aktif, situs publik akan menampilkan halaman perbaikan.
+                             Jika aktif, galeri akan muncul di halaman utama.
                         </p>
                     </div>
                     <Switch
-                        checked={maintenanceActive}
-                        onCheckedChange={handleMaintenanceToggle}
-                        id="maintenance-mode"
+                        checked={galleryVisible}
+                        onCheckedChange={handleGalleryToggle}
+                        id="gallery-status"
                     />
                 </div>
             </CardContent>
@@ -480,10 +464,6 @@ export function AdminPanel({
                                     Edit Data
                                 </DropdownMenuItem>
                             </EditArtworkDialog>
-                            <DropdownMenuItem onClick={() => handleToggleGallery(artwork.id, artwork.isInGallery)} disabled={artwork.isDisqualified}>
-                              {artwork.isInGallery ? <GalleryVerticalEnd className="mr-2 h-4 w-4" /> : <GalleryVertical className="mr-2 h-4 w-4" />}
-                              {artwork.isInGallery ? 'Hapus dari Galeri' : 'Tambahkan ke Galeri'}
-                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
                              {artwork.isDisqualified ? (
                                 <DropdownMenuItem onClick={() => handleRequalify(artwork.id)}>

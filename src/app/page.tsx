@@ -2,14 +2,17 @@
 import { ContestInfo } from "@/components/contest-info";
 import { Gallery } from "@/components/gallery";
 import { Button } from "@/components/ui/button";
-import { getArtworks, getSubmissionStatus } from "@/lib/actions";
+import { getArtworks, getGalleryStatus, getSubmissionStatus } from "@/lib/actions";
 import { Upload, XCircle } from "lucide-react";
 import Link from "next/link";
 
 export default async function Home() {
   const allArtworks = await getArtworks();
-  const galleryArtworks = allArtworks.filter(artwork => artwork.isInGallery);
   const isSubmissionOpen = await getSubmissionStatus();
+  const isGalleryVisible = await getGalleryStatus();
+  
+  const galleryArtworks = allArtworks.filter(artwork => !artwork.isDisqualified);
+
 
   return (
     <div className="space-y-24">
@@ -39,7 +42,7 @@ export default async function Home() {
 
       <ContestInfo />
 
-      <Gallery artworks={galleryArtworks} />
+      {isGalleryVisible && <Gallery artworks={galleryArtworks} />}
     </div>
   );
 }

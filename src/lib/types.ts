@@ -36,7 +36,6 @@ export type Artwork = {
   likes: number; // Jumlah "like" yang diterima karya
   isDisqualified: boolean;
   disqualificationReason: string | null;
-  isInGallery: boolean; // true if it should be shown in the public gallery
   comments: Comment[];
   createdAt: Date;
   customData: Record<string, string>; // For custom form fields

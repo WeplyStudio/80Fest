@@ -109,9 +109,12 @@ export async function getSuggestedArtworks(currentId: string, limit: number = 4)
         if (!ObjectId.isValid(currentId)) {
             return [];
         }
+        const isGalleryVisible = await getGalleryStatus();
+        if (!isGalleryVisible) return [];
+
         const collection = await getArtworksCollection();
         const suggestions = await collection.aggregate([
-            { $match: { _id: { $ne: new ObjectId(currentId) }, isInGallery: true, isDisqualified: false } },
+            { $match: { _id: { $ne: new ObjectId(currentId) }, isDisqualified: false } },
             { $sample: { size: limit } }
         ]).toArray();
         return suggestions.map(docToArtwork);
@@ -200,7 +203,6 @@ export async function submitArtwork(formData: FormData) {
       likes: 0,
       isDisqualified: false,
       disqualificationReason: null,
-      isInGallery: false,
       comments: [],
       createdAt: new Date(),
     });
@@ -235,22 +237,6 @@ export async function updateArtwork(artworkId: string, formData: FormData) {
     } catch (error) {
         console.error("Gagal memperbarui data:", error);
         return { success: false, message: "Gagal memperbarui data karya." };
-    }
-}
-
-
-export async function toggleGalleryStatus(artworkId: string, currentStatus: boolean) {
-    try {
-        const artworks = await getArtworksCollection();
-        await artworks.updateOne(
-            { _id: new ObjectId(artworkId) },
-            { $set: { isInGallery: !currentStatus } }
-        );
-        revalidateAll();
-        return { success: true };
-    } catch (error) {
-        console.error("Gagal mengubah status galeri:", error);
-        return { success: false, message: 'Gagal mengubah status galeri.' };
     }
 }
 
@@ -509,8 +495,6 @@ async function setSetting(key: string, value: any) {
 }
 
 export async function getSubmissionStatus(): Promise<boolean> {
-    const isMaintenance = await getMaintenanceStatus();
-    if (isMaintenance) return false;
     return getSetting("submissionOpen", true);
 }
 
@@ -526,13 +510,14 @@ export async function setLeaderboardStatus(showResults: boolean) {
     return setSetting("leaderboardVisible", showResults);
 }
 
-export async function getMaintenanceStatus(): Promise<boolean> {
-    return getSetting("maintenanceActive", false);
+export async function getGalleryStatus(): Promise<boolean> {
+    return getSetting("galleryVisible", true);
 }
 
-export async function setMaintenanceStatus(isActive: boolean) {
-    return setSetting("maintenanceActive", isActive);
+export async function setGalleryStatus(isVisible: boolean) {
+    return setSetting("galleryVisible", isVisible);
 }
+
 
 // --- Contest Info Actions ---
 
