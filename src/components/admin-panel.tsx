@@ -1,9 +1,9 @@
 
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
-import type { Artwork, ContestInfoData, JudgeScore, AnnouncementBannerData, FormFieldDefinition } from "@/lib/types";
+import type { Artwork, ContestInfoData, JudgeScore, AnnouncementBannerData, FormFieldDefinition, Comment } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -31,7 +31,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Eye, MoreHorizontal, Trash, Pencil, Star, Users, Layers, MessageCircle, LogOut, ShieldX, GalleryVertical, Trophy } from "lucide-react";
+import { Eye, MoreHorizontal, Trash, Pencil, Star, Users, Layers, MessageCircle, LogOut, ShieldX, GalleryVertical, Trophy, Check, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -44,7 +44,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { deleteArtwork, setSubmissionStatus, setLeaderboardStatus, disqualifyArtwork, setGalleryStatus, setArtworkLeaderboardStatus } from "@/lib/actions";
+import { deleteArtwork, setSubmissionStatus, setLeaderboardStatus, disqualifyArtwork, setGalleryStatus, setArtworkLeaderboardStatus, getPendingComments, approveComment, deleteCommentById } from "@/lib/actions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Switch } from "./ui/switch";
 import { Input } from "./ui/input";
@@ -95,7 +95,12 @@ export function AdminPanel({
   const [leaderboardVisible, setLeaderboardVisible] = useState(initialLeaderboardStatus);
   const [galleryVisible, setGalleryVisible] = useState(initialGalleryStatus);
   const [searchTerm, setSearchTerm] = useState("");
+  const [pendingComments, setPendingComments] = useState<Comment[]>([]);
   const { toast } = useToast();
+  
+  useEffect(() => {
+      getPendingComments().then(setPendingComments);
+  }, []);
 
   const stats = useMemo(() => {
     const totalArtworks = artworks.length;
@@ -211,6 +216,27 @@ export function AdminPanel({
         toast({ variant: 'destructive', title: "Gagal", description: result.message });
     }
   }
+
+  const handleApproveComment = async (commentId: string) => {
+    const result = await approveComment(commentId);
+    if (result.success) {
+      setPendingComments(prev => prev.filter(c => c.id !== commentId));
+      toast({ title: 'Komentar Disetujui' });
+    } else {
+      toast({ variant: 'destructive', title: 'Gagal', description: result.message });
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    const result = await deleteCommentById(commentId);
+    if (result.success) {
+      setPendingComments(prev => prev.filter(c => c.id !== commentId));
+      toast({ title: 'Komentar Dihapus' });
+    } else {
+      toast({ variant: 'destructive', title: 'Gagal', description: result.message });
+    }
+  };
+
 
   const getStatusBadge = (artwork: Artwork) => {
     if (artwork.isDisqualified) {
@@ -332,6 +358,50 @@ export function AdminPanel({
             </CardContent>
         </Card>
       </div>
+      
+      <section>
+        <h2 className="text-2xl font-bold font-headline mb-4">Moderasi Komentar ({pendingComments.length})</h2>
+        <Card>
+            <CardContent className="p-0">
+                {pendingComments.length > 0 ? (
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Komentar</TableHead>
+                                <TableHead>Penulis</TableHead>
+                                <TableHead>Rekomendasi AI</TableHead>
+                                <TableHead className="text-right">Aksi</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {pendingComments.map(comment => (
+                                <TableRow key={comment.id}>
+                                    <TableCell className="max-w-xs truncate">{comment.text}</TableCell>
+                                    <TableCell>{comment.authorName}</TableCell>
+                                    <TableCell>
+                                        <Badge variant={comment.aiDecision === 'allow' ? 'secondary' : 'destructive'}>
+                                            {comment.aiDecision === 'allow' ? 'Izinkan' : 'Tolak'}
+                                        </Badge>
+                                        <p className="text-xs text-muted-foreground mt-1">{comment.aiReason}</p>
+                                    </TableCell>
+                                    <TableCell className="text-right space-x-2">
+                                        <Button size="icon" variant="outline" className="h-8 w-8 text-green-500" onClick={() => handleApproveComment(comment.id)}>
+                                            <Check />
+                                        </Button>
+                                        <Button size="icon" variant="destructive" className="h-8 w-8" onClick={() => handleDeleteComment(comment.id)}>
+                                            <X />
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                ) : (
+                    <p className="text-center text-muted-foreground p-8">Tidak ada komentar yang menunggu moderasi.</p>
+                )}
+            </CardContent>
+        </Card>
+      </section>
 
       <div className="grid lg:grid-cols-2 gap-8">
         <ContestInfoEditor initialData={initialContestInfo} />

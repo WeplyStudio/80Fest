@@ -5,7 +5,8 @@ import { z } from "zod";
 import { getArtworksCollection, getSettingsCollection } from "./mongodb";
 import { revalidatePath } from "next/cache";
 import { ObjectId } from "mongodb";
-import type { Artwork, JudgeScore, ScoreCriteria, ContestInfoData, AnnouncementBannerData, FormFieldDefinition } from "./types";
+import type { Artwork, JudgeScore, ScoreCriteria, ContestInfoData, AnnouncementBannerData, FormFieldDefinition, Comment } from "./types";
+import { moderateComment } from "@/ai/flows/moderate-comment-flow";
 
 // Helper to revalidate all important paths
 function revalidateAll() {
@@ -47,6 +48,7 @@ function docToArtwork(doc: any): Artwork {
         createdAt: doc.createdAt,
         isOnLeaderboard: doc.isOnLeaderboard || false,
         customData: doc.customData || {},
+        comments: (doc.comments || []).map((c: any) => ({...c, id: c._id.toString()})),
     } as Artwork;
 }
 
@@ -119,6 +121,7 @@ export async function getGalleryArtworks(options: { page?: number, limit?: numbe
         isOnLeaderboard: false,
         createdAt: new Date(),
         customData: {},
+        comments: [],
     }));
 
     return { artworks, hasMore };
@@ -238,6 +241,7 @@ export async function submitArtwork(formData: FormData) {
       scores: [],
       totalPoints: 0,
       likes: 0,
+      comments: [],
       isDisqualified: false,
       disqualificationReason: null,
       isOnLeaderboard: false,
@@ -414,6 +418,117 @@ export async function setArtworkLeaderboardStatus(artworkId: string, isOnLeaderb
         return { success: false, message: 'Gagal memperbarui status.' };
     }
 }
+
+// --- Comment Actions ---
+
+export async function addComment(artworkId: string, authorName: string, text: string) {
+    if (!ObjectId.isValid(artworkId)) {
+        return { success: false, message: "ID Karya tidak valid." };
+    }
+
+    const validation = z.object({
+        authorName: z.string().min(2).max(50),
+        text: z.string().min(3).max(500),
+    }).safeParse({ authorName, text });
+
+    if (!validation.success) {
+        return { success: false, message: "Data komentar tidak valid." };
+    }
+
+    try {
+        const moderationResult = await moderateComment(text);
+
+        const newComment: Omit<Comment, 'id'> = {
+            _id: new ObjectId(),
+            artworkId: new ObjectId(artworkId),
+            authorName,
+            text,
+            createdAt: new Date(),
+            status: 'pending',
+            aiDecision: moderationResult.decision,
+            aiReason: moderationResult.reason,
+        };
+        
+        const artworks = await getArtworksCollection();
+        await artworks.updateOne(
+            { _id: new ObjectId(artworkId) },
+            { $push: { comments: newComment } }
+        );
+
+        revalidatePath(`/admin`);
+        
+        return { success: true, comment: { ...newComment, id: newComment._id.toString() } };
+    } catch (error) {
+        console.error("Gagal menambahkan komentar:", error);
+        return { success: false, message: "Gagal menambahkan komentar." };
+    }
+}
+
+export async function getPendingComments(): Promise<Comment[]> {
+    try {
+        const collection = await getArtworksCollection();
+        const artworksWithPendingComments = await collection.find({
+            "comments.status": "pending"
+        }).toArray();
+        
+        const pendingComments: Comment[] = [];
+        artworksWithPendingComments.forEach(artwork => {
+            artwork.comments.forEach((comment: any) => {
+                if (comment.status === 'pending') {
+                    pendingComments.push({
+                        ...comment,
+                        id: comment._id.toString()
+                    });
+                }
+            });
+        });
+
+        return pendingComments.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    } catch (error) {
+        console.error("Error fetching pending comments:", error);
+        return [];
+    }
+}
+
+export async function approveComment(commentId: string) {
+    if (!ObjectId.isValid(commentId)) {
+        return { success: false, message: "ID Komentar tidak valid." };
+    }
+    try {
+        const collection = await getArtworksCollection();
+        await collection.updateOne(
+            { "comments._id": new ObjectId(commentId) },
+            { $set: { "comments.$.status": "approved" } }
+        );
+        revalidatePath('/admin');
+        // Revalidate the specific artwork page if we store artworkId in comment
+        return { success: true };
+    } catch (error) {
+        console.error("Gagal menyetujui komentar:", error);
+        return { success: false, message: "Gagal menyetujui komentar." };
+    }
+}
+
+export async function deleteCommentById(commentId: string) {
+     if (!ObjectId.isValid(commentId)) {
+        return { success: false, message: "ID Komentar tidak valid." };
+    }
+    try {
+        const collection = await getArtworksCollection();
+        await collection.updateOne(
+            { "comments._id": new ObjectId(commentId) },
+            { $pull: { comments: { _id: new ObjectId(commentId) } } }
+        );
+        revalidatePath('/admin');
+        // Revalidate artwork page
+        return { success: true };
+    } catch (error) {
+        console.error("Gagal menghapus komentar:", error);
+        return { success: false, message: "Gagal menghapus komentar." };
+    }
+}
+
+
 
 // --- Global Settings Actions ---
 

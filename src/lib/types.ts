@@ -1,4 +1,6 @@
 
+import type { ObjectId } from "mongodb";
+
 export type ScoreCriteria = {
   theme_match: number;       // Kesesuaian dengan tema
   layout: number;            // Tata letak
@@ -12,6 +14,18 @@ export type JudgeScore = {
   totalScore: number;
 };
 
+export type Comment = {
+  id: string; // From MongoDB ObjectId
+  _id: ObjectId;
+  artworkId: ObjectId;
+  authorName: string;
+  text: string;
+  createdAt: Date;
+  status: 'pending' | 'approved' | 'rejected';
+  aiDecision?: 'allow' | 'deny';
+  aiReason?: string;
+};
+
 export type Artwork = {
   id: string; // Will be ObjectId string from MongoDB
   name: string;
@@ -20,6 +34,7 @@ export type Artwork = {
   description:string;
   imageUrl?: string;
   scores: JudgeScore[];
+  comments: Comment[];
   totalPoints: number;
   likes: number; // Jumlah "like" yang diterima karya
   isDisqualified: boolean;

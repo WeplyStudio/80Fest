@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import { SuggestedArtworks } from "@/components/suggested-artworks";
 import { LikeButton } from "@/components/like-button";
+import { ArtworkClientPage } from "./client-page";
 
 export default async function ArtworkPage({ params }: { params: { id: string } }) {
   const artwork = await getArtworkById(params.id);
@@ -13,6 +14,7 @@ export default async function ArtworkPage({ params }: { params: { id: string } }
   }
 
   const suggestedArtworks = await getSuggestedArtworks(artwork.id);
+  const approvedComments = artwork.comments?.filter(c => c.status === 'approved') || [];
 
   return (
     <div className="space-y-16">
@@ -53,6 +55,8 @@ export default async function ArtworkPage({ params }: { params: { id: string } }
             </div>
         </div>
         
+        <ArtworkClientPage artwork={artwork} initialComments={approvedComments} />
+
         <SuggestedArtworks artworks={suggestedArtworks} />
     </div>
   );
