@@ -29,7 +29,7 @@ export default async function LeaderboardPage() {
 
   const allArtworks = await getArtworks();
   const rankedArtworks = allArtworks
-    .filter((artwork) => !artwork.isDisqualified && artwork.totalPoints > 0)
+    .filter((artwork) => artwork.isOnLeaderboard)
     .sort((a, b) => b.totalPoints - a.totalPoints);
 
   return (

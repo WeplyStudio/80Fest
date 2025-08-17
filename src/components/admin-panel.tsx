@@ -31,7 +31,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Eye, MoreHorizontal, Trash, Pencil, Star, Users, Layers, MessageCircle, LogOut, ShieldX, GalleryVertical } from "lucide-react";
+import { Eye, MoreHorizontal, Trash, Pencil, Star, Users, Layers, MessageCircle, LogOut, ShieldX, GalleryVertical, Trophy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -44,7 +44,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { deleteArtwork, setSubmissionStatus, setLeaderboardStatus, disqualifyArtwork, setGalleryStatus } from "@/lib/actions";
+import { deleteArtwork, setSubmissionStatus, setLeaderboardStatus, disqualifyArtwork, setGalleryStatus, setArtworkLeaderboardStatus } from "@/lib/actions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Switch } from "./ui/switch";
 import { Input } from "./ui/input";
@@ -146,7 +146,7 @@ export function AdminPanel({
   const handleDisqualify = async (artworkId: string, reason: string) => {
       const result = await disqualifyArtwork(artworkId, reason, true);
       if (result.success) {
-        setArtworks(prev => prev.map(art => art.id === artworkId ? { ...art, isDisqualified: true, disqualificationReason: reason, totalPoints: 0, scores:[] } : art));
+        setArtworks(prev => prev.map(art => art.id === artworkId ? { ...art, isDisqualified: true, disqualificationReason: reason, totalPoints: 0, scores:[], isOnLeaderboard: false } : art));
         toast({ title: 'Karya Didiskualifikasi', description: `Karya telah didiskualifikasi karena: ${reason}` });
       } else {
         toast({ variant: 'destructive', title: 'Gagal', description: result.message });
@@ -158,6 +158,16 @@ export function AdminPanel({
       if (result.success) {
         setArtworks(prev => prev.map(art => art.id === artworkId ? { ...art, isDisqualified: false, disqualificationReason: null } : art));
         toast({ title: 'Diskualifikasi Dibatalkan', description: 'Karya kini dapat dinilai kembali.' });
+      } else {
+        toast({ variant: 'destructive', title: 'Gagal', description: result.message });
+      }
+  };
+
+  const handleLeaderboardVisibility = async (artworkId: string, isVisible: boolean) => {
+      const result = await setArtworkLeaderboardStatus(artworkId, isVisible);
+      if(result.success) {
+        setArtworks(prev => prev.map(art => art.id === artworkId ? { ...art, isOnLeaderboard: isVisible } : art));
+        toast({ title: `Status Peringkat Diperbarui`, description: `Karya sekarang ${isVisible ? 'tampil' : 'disembunyikan'} di papan peringkat.` });
       } else {
         toast({ variant: 'destructive', title: 'Gagal', description: result.message });
       }
@@ -205,6 +215,9 @@ export function AdminPanel({
   const getStatusBadge = (artwork: Artwork) => {
     if (artwork.isDisqualified) {
         return <Badge variant="destructive" className="bg-red-900/50 text-red-300 border-red-500/30">{artwork.disqualificationReason}</Badge>
+    }
+    if (artwork.isOnLeaderboard) {
+      return <Badge className="bg-yellow-500/10 text-yellow-300 border-yellow-500/20"><Trophy className="mr-1 w-3 h-3" />Di Peringkat</Badge>
     }
     return null;
   }
@@ -383,6 +396,15 @@ export function AdminPanel({
                                 </DropdownMenuItem>
                             </EditArtworkDialog>
                             <DropdownMenuSeparator />
+                            {artwork.isOnLeaderboard ? (
+                                <DropdownMenuItem onClick={() => handleLeaderboardVisibility(artwork.id, false)}>
+                                    <Trophy className="mr-2 h-4 w-4" /> Sembunyikan dari Peringkat
+                                </DropdownMenuItem>
+                            ) : (
+                                <DropdownMenuItem onClick={() => handleLeaderboardVisibility(artwork.id, true)} disabled={artwork.isDisqualified}>
+                                    <Trophy className="mr-2 h-4 w-4" /> Tampilkan di Peringkat
+                                </DropdownMenuItem>
+                            )}
                              {artwork.isDisqualified ? (
                                 <DropdownMenuItem onClick={() => handleRequalify(artwork.id)}>
                                     <ShieldX className="mr-2 h-4 w-4" />
@@ -412,7 +434,7 @@ export function AdminPanel({
                           <div className="grid md:grid-cols-2 gap-6 items-start">
                               <div className="aspect-[3/4] w-full relative rounded-md overflow-hidden bg-muted">
                                   <Image
-                                      src={artwork.imageUrl}
+                                      src={artwork.imageUrl || ''}
                                       alt={artwork.title}
                                       fill
                                       className="object-contain"

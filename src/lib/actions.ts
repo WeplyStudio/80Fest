@@ -13,6 +13,7 @@ function revalidateAll() {
     revalidatePath("/submit");
     revalidatePath("/admin");
     revalidatePath("/judge", "layout");
+    revalidatePath("/leaderboard");
 }
 
 const classes = ["VII", "VIII", "IX"] as const;
@@ -44,6 +45,7 @@ function docToArtwork(doc: any): Artwork {
         totalPoints: doc.totalPoints || 0,
         likes: doc.likes || 0,
         createdAt: doc.createdAt,
+        isOnLeaderboard: doc.isOnLeaderboard || false,
         customData: doc.customData || {},
     } as Artwork;
 }
@@ -81,6 +83,7 @@ export async function getGalleryArtworks(): Promise<Artwork[]> {
         totalPoints: 0,
         isDisqualified: false,
         disqualificationReason: null,
+        isOnLeaderboard: false,
         createdAt: new Date(),
         customData: {},
     }));
@@ -202,6 +205,7 @@ export async function submitArtwork(formData: FormData) {
       likes: 0,
       isDisqualified: false,
       disqualificationReason: null,
+      isOnLeaderboard: false,
       createdAt: new Date(),
     });
 
@@ -261,6 +265,7 @@ export async function disqualifyArtwork(artworkId: string, reason: string, isDis
             updateData.totalPoints = 0;
             updateData.scores = [];
             updateData.likes = 0;
+            updateData.isOnLeaderboard = false;
         }
 
         await artworks.updateOne(
@@ -356,6 +361,22 @@ export async function toggleLike(artworkId: string, liked: boolean) {
     } catch (error) {
         console.error("Gagal mengubah status 'like':", error);
         return { success: false, message: "Terjadi kesalahan pada server." };
+    }
+}
+
+export async function setArtworkLeaderboardStatus(artworkId: string, isOnLeaderboard: boolean) {
+    try {
+        const artworks = await getArtworksCollection();
+        await artworks.updateOne(
+            { _id: new ObjectId(artworkId) },
+            { $set: { isOnLeaderboard } }
+        );
+        revalidatePath('/admin');
+        revalidatePath('/leaderboard');
+        return { success: true };
+    } catch (error) {
+        console.error("Gagal mengubah status leaderboard karya:", error);
+        return { success: false, message: 'Gagal memperbarui status.' };
     }
 }
 

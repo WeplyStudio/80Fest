@@ -24,6 +24,7 @@ export type Artwork = {
   likes: number; // Jumlah "like" yang diterima karya
   isDisqualified: boolean;
   disqualificationReason: string | null;
+  isOnLeaderboard: boolean;
   createdAt: Date;
   customData: Record<string, string>; // For custom form fields
 };
