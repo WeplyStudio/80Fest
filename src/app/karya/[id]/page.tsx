@@ -20,12 +20,18 @@ export default async function ArtworkPage({ params }: { params: { id: string } }
     <div className="space-y-16">
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 items-start">
             <div className="lg:col-span-2 aspect-[3/4] w-full relative rounded-lg overflow-hidden bg-muted border">
-                <Image
-                    src={artwork.imageUrl}
-                    alt={artwork.title}
-                    fill
-                    className="object-contain"
-                />
+                {artwork.imageUrl ? (
+                    <Image
+                        src={artwork.imageUrl}
+                        alt={artwork.title}
+                        fill
+                        className="object-contain"
+                    />
+                ) : (
+                    <div className="flex items-center justify-center h-full text-muted-foreground">
+                        Gambar tidak tersedia
+                    </div>
+                )}
                  <div className="absolute bottom-2 right-2 pointer-events-none">
                     <span className="text-xs text-white bg-black/50 px-2 py-1 rounded">
                         &copy; {artwork.name}

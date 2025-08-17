@@ -2,16 +2,16 @@
 import { ContestInfo } from "@/components/contest-info";
 import { Gallery } from "@/components/gallery";
 import { Button } from "@/components/ui/button";
-import { getArtworks, getGalleryStatus, getSubmissionStatus } from "@/lib/actions";
+import { getGalleryArtworks, getGalleryStatus, getSubmissionStatus } from "@/lib/actions";
 import { Upload, XCircle } from "lucide-react";
 import Link from "next/link";
 
 export default async function Home() {
-  const allArtworks = await getArtworks();
   const isSubmissionOpen = await getSubmissionStatus();
   const isGalleryVisible = await getGalleryStatus();
   
-  const galleryArtworks = allArtworks.filter(artwork => !artwork.isDisqualified);
+  // Fetch only necessary gallery data if the gallery is visible
+  const galleryArtworks = isGalleryVisible ? await getGalleryArtworks() : [];
 
 
   return (

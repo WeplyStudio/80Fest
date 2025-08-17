@@ -30,7 +30,7 @@ export type Artwork = {
   class: string;
   title: string;
   description:string;
-  imageUrl: string;
+  imageUrl?: string;
   scores: JudgeScore[];
   totalPoints: number;
   likes: number; // Jumlah "like" yang diterima karya

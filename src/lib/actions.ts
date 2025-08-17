@@ -65,6 +65,39 @@ export async function getArtworks(): Promise<Artwork[]> {
     return artworksFromDb.map(docToArtwork);
 }
 
+export async function getGalleryArtworks(): Promise<Artwork[]> {
+    const collection = await getArtworksCollection();
+    const artworksFromDb = await collection.find({ isDisqualified: false }, {
+        projection: {
+            _id: 1,
+            title: 1,
+            name: 1,
+            class: 1,
+            imageUrl: 1, 
+            likes: 1,
+        }
+    }).sort({ createdAt: -1 }).toArray();
+
+    return artworksFromDb.map(doc => ({
+        id: doc._id.toString(),
+        title: doc.title,
+        name: doc.name,
+        class: doc.class,
+        imageUrl: doc.imageUrl,
+        likes: doc.likes || 0,
+        // Provide default empty values for fields not projected
+        description: "",
+        scores: [],
+        totalPoints: 0,
+        isDisqualified: false,
+        disqualificationReason: null,
+        comments: [],
+        createdAt: new Date(),
+        customData: {},
+    }));
+}
+
+
 export async function getPendingComments(): Promise<Comment[]> {
     const collection = await getArtworksCollection();
     const artworksWithPendingComments = await collection.find({ "comments.isPendingModeration": true }).toArray();
