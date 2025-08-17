@@ -6,13 +6,15 @@ import { getGalleryArtworks, getGalleryStatus, getSubmissionStatus } from "@/lib
 import { Upload, XCircle } from "lucide-react";
 import Link from "next/link";
 
+const ARTWORKS_PER_PAGE = 5;
+
 export default async function Home() {
   const isSubmissionOpen = await getSubmissionStatus();
   const isGalleryVisible = await getGalleryStatus();
   
-  // Fetch only necessary gallery data if the gallery is visible
-  const galleryArtworks = isGalleryVisible ? await getGalleryArtworks() : [];
-
+  const { artworks: initialArtworks, hasMore } = isGalleryVisible 
+    ? await getGalleryArtworks({ page: 1, limit: ARTWORKS_PER_PAGE }) 
+    : { artworks: [], hasMore: false };
 
   return (
     <div className="space-y-24">
@@ -42,7 +44,13 @@ export default async function Home() {
 
       <ContestInfo />
 
-      {isGalleryVisible && <Gallery artworks={galleryArtworks} />}
+      {isGalleryVisible && (
+        <Gallery 
+            initialArtworks={initialArtworks} 
+            initialHasMore={hasMore} 
+            artworksPerPage={ARTWORKS_PER_PAGE}
+        />
+      )}
     </div>
   );
 }

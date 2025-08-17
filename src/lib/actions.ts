@@ -51,15 +51,41 @@ function docToArtwork(doc: any): Artwork {
 }
 
 
-export async function getArtworks(): Promise<Artwork[]> {
+export async function getArtworks(options: { page?: number, limit?: number, leaderboardOnly?: boolean } = {}): Promise<{ artworks: Artwork[], hasMore: boolean }> {
+    const { page = 1, limit = 10, leaderboardOnly = false } = options;
     const collection = await getArtworksCollection();
-    const artworksFromDb = await collection.find({}).sort({ createdAt: -1 }).toArray();
-    return artworksFromDb.map(docToArtwork);
+    
+    const query: any = {};
+    if (leaderboardOnly) {
+        query.isOnLeaderboard = true;
+    }
+    
+    const skip = (page - 1) * limit;
+    
+    const artworksFromDb = await collection
+        .find(query)
+        .sort(leaderboardOnly ? { totalPoints: -1 } : { createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .toArray();
+
+    const totalArtworks = await collection.countDocuments(query);
+    const hasMore = (skip + limit) < totalArtworks;
+        
+    return {
+        artworks: artworksFromDb.map(docToArtwork),
+        hasMore,
+    };
 }
 
-export async function getGalleryArtworks(): Promise<Artwork[]> {
+export async function getGalleryArtworks(options: { page?: number, limit?: number } = {}): Promise<{ artworks: Artwork[], hasMore: boolean }> {
+    const { page = 1, limit = 10 } = options;
     const collection = await getArtworksCollection();
-    const artworksFromDb = await collection.find({ isDisqualified: false }, {
+    const skip = (page - 1) * limit;
+
+    const query = { isDisqualified: false };
+
+    const artworksFromDb = await collection.find(query, {
         projection: {
             _id: 1,
             title: 1,
@@ -68,9 +94,16 @@ export async function getGalleryArtworks(): Promise<Artwork[]> {
             imageUrl: 1, 
             likes: 1,
         }
-    }).sort({ createdAt: -1 }).toArray();
+    })
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit)
+    .toArray();
 
-    return artworksFromDb.map(doc => ({
+    const totalArtworks = await collection.countDocuments(query);
+    const hasMore = (skip + limit) < totalArtworks;
+
+    const artworks = artworksFromDb.map(doc => ({
         id: doc._id.toString(),
         title: doc.title,
         name: doc.name,
@@ -87,6 +120,8 @@ export async function getGalleryArtworks(): Promise<Artwork[]> {
         createdAt: new Date(),
         customData: {},
     }));
+
+    return { artworks, hasMore };
 }
 
 export async function getArtworkById(id: string): Promise<Artwork | null> {

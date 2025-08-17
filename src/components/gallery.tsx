@@ -1,18 +1,26 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import type { Artwork } from "@/lib/types";
-import { Camera, Heart } from "lucide-react";
+import { Camera, Heart, Loader2 } from "lucide-react";
+import { getGalleryArtworks } from "@/lib/actions";
+import { Button } from "./ui/button";
 
 interface GalleryProps {
-  artworks: Artwork[];
+  initialArtworks: Artwork[];
+  initialHasMore: boolean;
+  artworksPerPage: number;
 }
 
-export function Gallery({ artworks: initialArtworks }: GalleryProps) {
+export function Gallery({ initialArtworks, initialHasMore, artworksPerPage }: GalleryProps) {
+  const [artworks, setArtworks] = useState<Artwork[]>(initialArtworks);
+  const [page, setPage] = useState(2); // Next page to fetch is 2
+  const [hasMore, setHasMore] = useState(initialHasMore);
+  const [isPending, startTransition] = useTransition();
   
   if (initialArtworks.length === 0) {
     return (
@@ -32,6 +40,18 @@ export function Gallery({ artworks: initialArtworks }: GalleryProps) {
     );
   }
 
+  const loadMoreArtworks = () => {
+    startTransition(async () => {
+      const { artworks: newArtworks, hasMore: newHasMore } = await getGalleryArtworks({
+        page,
+        limit: artworksPerPage,
+      });
+      setArtworks((prev) => [...prev, ...newArtworks]);
+      setPage((prev) => prev + 1);
+      setHasMore(newHasMore);
+    });
+  };
+
   return (
     <section id="gallery" className="space-y-12 section-padding">
       <div className="text-center">
@@ -39,7 +59,7 @@ export function Gallery({ artworks: initialArtworks }: GalleryProps) {
         <p className="text-muted-foreground mt-3 max-w-2xl mx-auto">Jelajahi karya-karya luar biasa dari para peserta berbakat kami. Klik pada karya mana pun untuk melihat detailnya.</p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-          {initialArtworks.map((artwork) => (
+          {artworks.map((artwork) => (
             <Link key={artwork.id} href={`/karya/${artwork.id}`} className="block">
               <Card className="overflow-hidden flex flex-col group transition-all duration-300 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2 bg-card border-border/50 h-full">
                   <div className="p-0 cursor-pointer">
@@ -75,6 +95,20 @@ export function Gallery({ artworks: initialArtworks }: GalleryProps) {
             </Link>
           ))}
       </div>
+       {hasMore && (
+        <div className="text-center">
+          <Button onClick={loadMoreArtworks} disabled={isPending} size="lg">
+            {isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Memuat...
+              </>
+            ) : (
+              "Lihat Lebih Banyak"
+            )}
+          </Button>
+        </div>
+      )}
     </section>
   );
 }

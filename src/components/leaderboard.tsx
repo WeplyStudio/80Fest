@@ -1,11 +1,11 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Artwork, JudgeScore } from '@/lib/types';
-import { Medal, Trophy, Star } from 'lucide-react';
+import { Medal, Trophy, Star, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from './ui/badge';
 import {
@@ -17,9 +17,13 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import React from 'react';
+import { getArtworks } from '@/lib/actions';
+import { Button } from './ui/button';
 
 interface LeaderboardProps {
-  rankedArtworks: Artwork[];
+  initialArtworks: Artwork[];
+  initialHasMore: boolean;
+  artworksPerPage: number;
 }
 
 const winnerStyles: { [key: number]: { card: string; iconColor: string; bgColor: string; label: string; } } = {
@@ -43,9 +47,14 @@ const winnerStyles: { [key: number]: { card: string; iconColor: string; bgColor:
   },
 };
 
-export function Leaderboard({ rankedArtworks: initialArtworks }: LeaderboardProps) {
+export function Leaderboard({ initialArtworks, initialHasMore, artworksPerPage }: LeaderboardProps) {
 
-  if (initialArtworks.length === 0) {
+  const [artworks, setArtworks] = useState<Artwork[]>(initialArtworks);
+  const [page, setPage] = useState(2);
+  const [hasMore, setHasMore] = useState(initialHasMore);
+  const [isPending, startTransition] = useTransition();
+
+  if (artworks.length === 0) {
     return (
       <div className="text-center py-20 border-2 border-dashed border-border/50 rounded-xl bg-card/50">
         <Trophy className="mx-auto h-12 w-12 text-muted-foreground" />
@@ -57,8 +66,21 @@ export function Leaderboard({ rankedArtworks: initialArtworks }: LeaderboardProp
     );
   }
 
-  const topThree = initialArtworks.slice(0, 3);
-  const others = initialArtworks.slice(3);
+  const loadMoreArtworks = () => {
+    startTransition(async () => {
+      const { artworks: newArtworks, hasMore: newHasMore } = await getArtworks({
+        page,
+        limit: artworksPerPage,
+        leaderboardOnly: true,
+      });
+      setArtworks((prev) => [...prev, ...newArtworks]);
+      setPage((prev) => prev + 1);
+      setHasMore(newHasMore);
+    });
+  };
+  
+  const topThree = artworks.slice(0, 3);
+  const others = artworks.slice(3);
 
   return (
     <div className="space-y-16">
@@ -69,7 +91,14 @@ export function Leaderboard({ rankedArtworks: initialArtworks }: LeaderboardProp
           ))}
         </div>
       )}
-      {others.length > 0 && <OtherRanks artworks={others} />}
+      {others.length > 0 && (
+        <OtherRanks 
+          artworks={others} 
+          hasMore={hasMore}
+          isPending={isPending}
+          onLoadMore={loadMoreArtworks}
+        />
+      )}
     </div>
   );
 }
@@ -121,7 +150,7 @@ function WinnerCard({ artwork, rank }: WinnerCardProps) {
 }
 
 
-function OtherRanks({ artworks }: { artworks: Artwork[] }) {
+function OtherRanks({ artworks, hasMore, isPending, onLoadMore }: { artworks: Artwork[], hasMore: boolean, isPending: boolean, onLoadMore: () => void }) {
     return (
         <Card className="bg-card/50">
             <CardHeader>
@@ -152,46 +181,21 @@ function OtherRanks({ artworks }: { artworks: Artwork[] }) {
                         ))}
                     </TableBody>
                 </Table>
+                 {hasMore && (
+                    <div className="text-center pt-8">
+                        <Button onClick={onLoadMore} disabled={isPending}>
+                             {isPending ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Memuat...
+                                </>
+                                ) : (
+                                "Lihat Lebih Banyak"
+                                )}
+                        </Button>
+                    </div>
+                 )}
             </CardContent>
         </Card>
-    )
-}
-
-function ScoreTable({ scores, totalPoints }: { scores: JudgeScore[], totalPoints: number }) {
-    return (
-        <div className="border rounded-lg border-border/50 bg-card/30">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Juri</TableHead>
-                        <TableHead>Kriteria</TableHead>
-                        <TableHead className="text-right">Poin</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                     {scores.map((score, scoreIndex) => (
-                        <React.Fragment key={`${score.judgeName}-${scoreIndex}`}>
-                            <TableRow>
-                                <TableCell rowSpan={5} className="font-medium align-top pt-4 text-base">{score.judgeName}</TableCell>
-                                <TableCell className="text-muted-foreground">Kesesuaian Tema</TableCell>
-                                <TableCell className="text-right">{score.criteria.theme_match}</TableCell>
-                            </TableRow>
-                            <TableRow><TableCell className="text-muted-foreground">Tata Letak</TableCell><TableCell className="text-right">{score.criteria.layout}</TableCell></TableRow>
-                            <TableRow><TableCell className="text-muted-foreground">Tipografi & Warna</TableCell><TableCell className="text-right">{score.criteria.typography_color}</TableCell></TableRow>
-                            <TableRow><TableCell className="text-muted-foreground">Kejelasan Konten</TableCell><TableCell className="text-right">{score.criteria.content_clarity}</TableCell></TableRow>
-                            <TableRow className="bg-card/30">
-                                <TableCell className="font-semibold">Subtotal</TableCell>
-                                <TableCell className="text-right font-semibold">{score.totalScore}</TableCell>
-                            </TableRow>
-                        </React.Fragment>
-                    ))}
-                    {scores.length > 0 && <TableRow><TableCell colSpan={3} className="p-0"><div className="h-px bg-border/50 w-full"></div></TableCell></TableRow>}
-                    <TableRow className="bg-card/50 font-bold text-base">
-                        <TableCell colSpan={2}>Total Akhir</TableCell>
-                        <TableCell className="text-right text-lg text-primary">{totalPoints}</TableCell>
-                    </TableRow>
-                </TableBody>
-            </Table>
-        </div>
     )
 }

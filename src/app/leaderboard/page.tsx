@@ -4,6 +4,8 @@ import { getArtworks, getLeaderboardStatus } from "@/lib/actions";
 import { Trophy } from "lucide-react";
 import { ConfettiCelebration } from "@/components/confetti-celebration";
 
+const ARTWORKS_PER_PAGE = 5;
+
 export default async function LeaderboardPage() {
   const showResults = await getLeaderboardStatus();
   
@@ -27,11 +29,12 @@ export default async function LeaderboardPage() {
     );
   }
 
-  const allArtworks = await getArtworks();
-  const rankedArtworks = allArtworks
-    .filter((artwork) => artwork.isOnLeaderboard)
-    .sort((a, b) => b.totalPoints - a.totalPoints);
-
+  const { artworks: initialArtworks, hasMore } = await getArtworks({ 
+    page: 1, 
+    limit: ARTWORKS_PER_PAGE, 
+    leaderboardOnly: true 
+  });
+  
   return (
     <>
       <ConfettiCelebration />
@@ -42,7 +45,11 @@ export default async function LeaderboardPage() {
             Hasil akhir dari Lomba Desain Poster 80Fest!
           </p>
         </div>
-        <Leaderboard rankedArtworks={rankedArtworks} />
+        <Leaderboard 
+          initialArtworks={initialArtworks} 
+          initialHasMore={hasMore} 
+          artworksPerPage={ARTWORKS_PER_PAGE}
+        />
       </div>
     </>
   );
