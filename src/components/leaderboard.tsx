@@ -49,9 +49,9 @@ export function Leaderboard({ rankedArtworks: initialArtworks }: LeaderboardProp
     return (
       <div className="text-center py-20 border-2 border-dashed border-border/50 rounded-xl bg-card/50">
         <Trophy className="mx-auto h-12 w-12 text-muted-foreground" />
-        <h3 className="mt-6 text-xl font-medium">Belum Ada Karya yang Dinilai</h3>
+        <h3 className="mt-6 text-xl font-medium">Belum Ada Karya yang Ditampilkan</h3>
         <p className="mt-2 text-base text-muted-foreground">
-          Papan peringkat akan muncul di sini setelah proses penjurian dimulai.
+          Papan peringkat akan muncul di sini setelah admin memilih karya untuk ditampilkan.
         </p>
       </div>
     );
@@ -63,9 +63,11 @@ export function Leaderboard({ rankedArtworks: initialArtworks }: LeaderboardProp
   return (
     <div className="space-y-16">
       {topThree.length > 0 && (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 items-start">
-            {topThree.map((winner, index) => <WinnerCard key={winner.id} artwork={winner} rank={index + 1} />)}
-          </div>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 items-start">
+          {topThree.map((winner, index) => (
+            <WinnerCard key={winner.id} artwork={winner} rank={index + 1} />
+          ))}
+        </div>
       )}
       {others.length > 0 && <OtherRanks artworks={others} />}
     </div>
@@ -102,7 +104,7 @@ function WinnerCard({ artwork, rank }: WinnerCardProps) {
                  <Link href={`/karya/${artwork.id}`} className="block">
                   <div className="aspect-[3/4] relative rounded-lg overflow-hidden cursor-pointer group">
                       <Image
-                          src={artwork.imageUrl}
+                          src={artwork.imageUrl || ''}
                           alt={artwork.title}
                           fill
                           className="object-cover transition-transform duration-300 group-hover:scale-105"
