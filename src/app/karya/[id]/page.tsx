@@ -3,8 +3,6 @@ import { getArtworkById, getSuggestedArtworks } from "@/lib/actions";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { SuggestedArtworks } from "@/components/suggested-artworks";
-import { ArtworkDetailClient } from "./client-page";
-import { Badge } from "@/components/ui/badge";
 import { LikeButton } from "@/components/like-button";
 
 export default async function ArtworkPage({ params }: { params: { id: string } }) {
@@ -52,9 +50,6 @@ export default async function ArtworkPage({ params }: { params: { id: string } }
                     <h3 className="font-semibold font-headline mb-2">Deskripsi Karya</h3>
                     <p className="text-muted-foreground text-sm leading-relaxed">{artwork.description}</p>
                 </div>
-                
-                <ArtworkDetailClient artwork={artwork} />
-
             </div>
         </div>
         

@@ -12,8 +12,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Lock } from "lucide-react";
-import { getArtworks, getSubmissionStatus, getLeaderboardStatus, getContestInfo, getAnnouncementBanner, getPendingComments, getFormFields, getGalleryStatus } from "@/lib/actions";
-import { Artwork, ContestInfoData, AnnouncementBannerData, Comment, FormFieldDefinition } from "@/lib/types";
+import { getArtworks, getSubmissionStatus, getLeaderboardStatus, getContestInfo, getAnnouncementBanner, getFormFields, getGalleryStatus } from "@/lib/actions";
+import { Artwork, ContestInfoData, AnnouncementBannerData, FormFieldDefinition } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const loginSchema = z.object({
@@ -34,7 +34,6 @@ export default function AdminPage() {
   const [galleryStatus, setGalleryStatus] = useState<boolean | null>(null);
   const [contestInfo, setContestInfo] = useState<ContestInfoData | null>(null);
   const [bannerInfo, setBannerInfo] = useState<AnnouncementBannerData | null>(null);
-  const [pendingComments, setPendingComments] = useState<Comment[] | null>(null);
   const [formFields, setFormFields] = useState<FormFieldDefinition[] | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -65,16 +64,14 @@ export default function AdminPage() {
         getLeaderboardStatus(),
         getContestInfo(),
         getAnnouncementBanner(),
-        getPendingComments(),
         getFormFields(),
         getGalleryStatus(),
-      ]).then(([artworksData, submissionStatusData, leaderboardStatusData, contestInfoData, bannerData, commentsData, formFieldsData, galleryStatusData]) => {
+      ]).then(([artworksData, submissionStatusData, leaderboardStatusData, contestInfoData, bannerData, formFieldsData, galleryStatusData]) => {
             setArtworks(artworksData);
             setSubmissionStatus(submissionStatusData);
             setLeaderboardStatus(leaderboardStatusData);
             setContestInfo(contestInfoData);
             setBannerInfo(bannerData);
-            setPendingComments(commentsData);
             setFormFields(formFieldsData);
             setGalleryStatus(galleryStatusData);
             setLoading(false);
@@ -111,13 +108,12 @@ export default function AdminPage() {
     setSubmissionStatus(null);
     setLeaderboardStatus(null);
     setGalleryStatus(null);
-    setPendingComments(null);
     setFormFields(null);
     setLoading(false);
   }
 
   if (isAuthenticated) {
-     if (loading || !artworks || submissionStatus === null || leaderboardStatus === null || galleryStatus === null || !contestInfo || !bannerInfo || !pendingComments || !formFields) {
+     if (loading || !artworks || submissionStatus === null || leaderboardStatus === null || galleryStatus === null || !contestInfo || !bannerInfo || !formFields) {
       return (
         <div className="space-y-4">
           <div>
@@ -140,7 +136,6 @@ export default function AdminPage() {
         initialGalleryStatus={galleryStatus}
         initialContestInfo={contestInfo}
         initialBannerInfo={bannerInfo}
-        initialPendingComments={pendingComments}
         initialFormFields={formFields}
         onLogout={handleLogout}
     />;

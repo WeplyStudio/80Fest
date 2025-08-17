@@ -3,8 +3,7 @@
 
 import { useState, useMemo } from "react";
 import Image from "next/image";
-import Link from "next/link";
-import type { Artwork, ContestInfoData, JudgeScore, AnnouncementBannerData, Comment, FormFieldDefinition } from "@/lib/types";
+import type { Artwork, ContestInfoData, JudgeScore, AnnouncementBannerData, FormFieldDefinition } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -32,7 +31,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Eye, MoreHorizontal, Trash, Pencil, Star, Users, Layers, MessageCircle, LogOut, ShieldX, Check, X, AlertTriangle, GalleryVertical } from "lucide-react";
+import { Eye, MoreHorizontal, Trash, Pencil, Star, Users, Layers, MessageCircle, LogOut, ShieldX, GalleryVertical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -45,7 +44,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { deleteArtwork, setSubmissionStatus, setLeaderboardStatus, disqualifyArtwork, approveComment, deleteCommentById, setGalleryStatus } from "@/lib/actions";
+import { deleteArtwork, setSubmissionStatus, setLeaderboardStatus, disqualifyArtwork, setGalleryStatus } from "@/lib/actions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Switch } from "./ui/switch";
 import { Input } from "./ui/input";
@@ -64,7 +63,6 @@ interface AdminPanelProps {
     initialGalleryStatus: boolean;
     initialContestInfo: ContestInfoData;
     initialBannerInfo: AnnouncementBannerData;
-    initialPendingComments: Comment[];
     initialFormFields: FormFieldDefinition[];
     onLogout: () => void;
 }
@@ -89,7 +87,6 @@ export function AdminPanel({
     initialGalleryStatus,
     initialContestInfo, 
     initialBannerInfo, 
-    initialPendingComments, 
     initialFormFields,
     onLogout 
 }: AdminPanelProps) {
@@ -97,7 +94,6 @@ export function AdminPanel({
   const [submissionOpen, setSubmissionOpen] = useState(initialSubmissionStatus);
   const [leaderboardVisible, setLeaderboardVisible] = useState(initialLeaderboardStatus);
   const [galleryVisible, setGalleryVisible] = useState(initialGalleryStatus);
-  const [pendingComments, setPendingComments] = useState<Comment[]>(initialPendingComments);
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
 
@@ -213,26 +209,6 @@ export function AdminPanel({
     return null;
   }
   
-  const handleApproveComment = async (artworkId: string, commentId: string) => {
-    const result = await approveComment(artworkId, commentId);
-    if(result.success) {
-        setPendingComments(prev => prev.filter(c => c.id !== commentId));
-        toast({title: 'Komentar Disetujui', description: 'Komentar sekarang tampil untuk publik.'});
-    } else {
-        toast({variant: 'destructive', title: 'Gagal', description: result.message});
-    }
-  }
-
-  const handleDeleteComment = async (artworkId: string, commentId: string) => {
-    const result = await deleteCommentById(artworkId, commentId);
-    if(result.success) {
-        setPendingComments(prev => prev.filter(c => c.id !== commentId));
-        toast({variant: 'destructive', title: 'Komentar Dihapus', description: 'Komentar telah dihapus permanen.'});
-    } else {
-        toast({variant: 'destructive', title: 'Gagal', description: result.message});
-    }
-  }
-
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-start">
@@ -288,16 +264,6 @@ export function AdminPanel({
                     ) : (
                         <p>Belum ada karya.</p>
                     )}
-                </CardContent>
-            </Card>
-             <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Komentar Moderasi</CardTitle>
-                    <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{pendingComments.length}</div>
-                    <p className="text-xs text-muted-foreground">Komentar menunggu persetujuan</p>
                 </CardContent>
             </Card>
         </div>
@@ -358,54 +324,6 @@ export function AdminPanel({
         <ContestInfoEditor initialData={initialContestInfo} />
         <FormFieldEditor initialFields={initialFormFields} />
       </div>
-
-       <Card>
-        <CardHeader>
-            <CardTitle className="font-headline">Moderasi Komentar</CardTitle>
-            <CardDescription>Tinjau komentar yang ditandai oleh AI sebelum ditampilkan ke publik.</CardDescription>
-        </CardHeader>
-        <CardContent>
-            {pendingComments.length > 0 ? (
-                 <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Komentar</TableHead>
-                            <TableHead>Alasan Ditandai</TableHead>
-                            <TableHead>Pada Karya</TableHead>
-                            <TableHead className="text-right">Aksi</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {pendingComments.map((comment) => (
-                            <TableRow key={comment.id}>
-                                <TableCell className="max-w-xs break-words">{comment.text}</TableCell>
-                                <TableCell>
-                                    <Badge variant="destructive">{comment.moderationReason || 'Tidak pantas'}</Badge>
-                                </TableCell>
-                                <TableCell>
-                                    <Link href={`/karya/${comment.artworkId}`} className="text-sm hover:underline" target="_blank">
-                                        {comment.artworkTitle}
-                                    </Link>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                    <div className="flex gap-2 justify-end">
-                                        <Button size="sm" variant="outline" onClick={() => handleDeleteComment(comment.artworkId!, comment.id)}>
-                                            <X className="mr-2" /> Tolak
-                                        </Button>
-                                        <Button size="sm" onClick={() => handleApproveComment(comment.artworkId!, comment.id)}>
-                                            <Check className="mr-2" /> Setujui
-                                        </Button>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                 </Table>
-            ) : (
-                <p className="text-center text-muted-foreground py-4">Tidak ada komentar yang perlu dimoderasi.</p>
-            )}
-        </CardContent>
-      </Card>
       
       <div className="space-y-4">
         <h2 className="text-2xl font-bold font-headline">Daftar Karya Peserta</h2>

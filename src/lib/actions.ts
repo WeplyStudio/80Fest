@@ -5,8 +5,7 @@ import { z } from "zod";
 import { getArtworksCollection, getSettingsCollection } from "./mongodb";
 import { revalidatePath } from "next/cache";
 import { ObjectId } from "mongodb";
-import type { Artwork, JudgeScore, Comment, ScoreCriteria, ContestInfoData, AnnouncementBannerData, FormFieldDefinition } from "./types";
-import { moderateComment } from "@/ai/flows/moderate-comment-flow";
+import type { Artwork, JudgeScore, ScoreCriteria, ContestInfoData, AnnouncementBannerData, FormFieldDefinition } from "./types";
 
 // Helper to revalidate all important paths
 function revalidateAll() {
@@ -38,21 +37,12 @@ function docToArtwork(doc: any): Artwork {
     if (!doc) return doc;
     const { _id, ...rest } = doc;
     
-    // Process comments to ensure IDs are strings
-    const processedComments = (doc.comments || []).map((c: any) => ({
-        ...c,
-        id: c.id.toString(),
-        parentId: c.parentId ? c.parentId.toString() : null,
-        replies: [] // Replies are constructed on the client
-    }));
-
     return {
         ...rest,
         id: _id.toString(),
         scores: doc.scores || [],
         totalPoints: doc.totalPoints || 0,
         likes: doc.likes || 0,
-        comments: processedComments,
         createdAt: doc.createdAt,
         customData: doc.customData || {},
     } as Artwork;
@@ -91,33 +81,9 @@ export async function getGalleryArtworks(): Promise<Artwork[]> {
         totalPoints: 0,
         isDisqualified: false,
         disqualificationReason: null,
-        comments: [],
         createdAt: new Date(),
         customData: {},
     }));
-}
-
-
-export async function getPendingComments(): Promise<Comment[]> {
-    const collection = await getArtworksCollection();
-    const artworksWithPendingComments = await collection.find({ "comments.isPendingModeration": true }).toArray();
-    
-    const pendingComments: Comment[] = [];
-    artworksWithPendingComments.forEach(artwork => {
-        artwork.comments.forEach((comment: any) => {
-            if (comment.isPendingModeration) {
-                pendingComments.push({
-                    ...comment,
-                    id: comment.id.toString(),
-                    parentId: comment.parentId ? comment.parentId.toString() : null,
-                    artworkId: artwork._id.toString(),
-                    artworkTitle: artwork.title,
-                });
-            }
-        });
-    });
-
-    return pendingComments.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
 export async function getArtworkById(id: string): Promise<Artwork | null> {
@@ -236,7 +202,6 @@ export async function submitArtwork(formData: FormData) {
       likes: 0,
       isDisqualified: false,
       disqualificationReason: null,
-      comments: [],
       createdAt: new Date(),
     });
 
@@ -393,110 +358,6 @@ export async function toggleLike(artworkId: string, liked: boolean) {
         return { success: false, message: "Terjadi kesalahan pada server." };
     }
 }
-
-
-const commentSchema = z.object({
-  commentText: z.string().min(1, "Komentar tidak boleh kosong.").max(500, "Komentar maksimal 500 karakter."),
-});
-
-export async function addComment(artworkId: string, formData: FormData, parentId: string | null) {
-    const rawFormData = Object.fromEntries(formData.entries());
-    const parsed = commentSchema.safeParse(rawFormData);
-    
-    if (!parsed.success) {
-        return { success: false, message: parsed.error.errors[0].message };
-    }
-
-    try {
-        const artworks = await getArtworksCollection();
-        const artwork = await artworks.findOne({ _id: new ObjectId(artworkId) });
-
-        if (!artwork) {
-            return { success: false, message: "Karya tidak ditemukan." };
-        }
-        
-        let finalParentId = null;
-        if (parentId) {
-            const commentsWithObjectId = artwork.comments.map((c: any) => ({...c, id: new ObjectId(c.id)}));
-
-            // Find the comment being replied to
-            const parentComment = commentsWithObjectId.find((c: any) => c.id.toString() === parentId);
-            
-            // If the parent comment is itself a reply (it has a parentId), use that parentId.
-            // Otherwise, it's a root comment, so use its own id.
-            // This ensures all replies are direct children of a root comment.
-            if (parentComment) {
-                 finalParentId = parentComment.parentId ? parentComment.parentId : parentComment.id;
-            } else {
-                 finalParentId = new ObjectId(parentId)
-            }
-        }
-        
-        // Moderate comment with AI
-        const moderationResult = await moderateComment({ commentText: parsed.data.commentText });
-
-        const newComment: Omit<Comment, 'replies'> = {
-            id: new ObjectId().toString(),
-            text: parsed.data.commentText,
-            createdAt: new Date(),
-            parentId: finalParentId ? finalParentId.toString() : null,
-            isPendingModeration: !moderationResult.isAppropriate,
-            moderationReason: moderationResult.reason || null,
-        };
-
-        const result = await artworks.findOneAndUpdate(
-            { _id: new ObjectId(artworkId) },
-            { $push: { comments: { ...newComment, id: new ObjectId(newComment.id), parentId: finalParentId } } },
-            { returnDocument: 'after' }
-        );
-
-        if (!result) {
-            return { success: false, message: "Karya tidak ditemukan." };
-        }
-        
-        revalidatePath(`/karya/${artworkId}`);
-        revalidatePath(`/admin`);
-
-        return { success: true, updatedArtwork: docToArtwork(result) };
-
-    } catch (error) {
-        console.error("Gagal menambahkan komentar:", error);
-        return { success: false, message: "Terjadi kesalahan pada server." };
-    }
-}
-
-export async function approveComment(artworkId: string, commentId: string) {
-    try {
-        const artworks = await getArtworksCollection();
-        await artworks.updateOne(
-            { _id: new ObjectId(artworkId), "comments.id": new ObjectId(commentId) },
-            { $set: { "comments.$.isPendingModeration": false, "comments.$.moderationReason": null } }
-        );
-        revalidatePath(`/karya/${artworkId}`);
-        revalidatePath('/admin');
-        return { success: true };
-    } catch (error) {
-        console.error("Gagal menyetujui komentar:", error);
-        return { success: false, message: "Gagal menyetujui komentar." };
-    }
-}
-
-export async function deleteCommentById(artworkId: string, commentId: string) {
-    try {
-        const artworks = await getArtworksCollection();
-        await artworks.updateOne(
-            { _id: new ObjectId(artworkId) },
-            { $pull: { comments: { id: new ObjectId(commentId) } } }
-        );
-        revalidatePath(`/karya/${artworkId}`);
-        revalidatePath('/admin');
-        return { success: true };
-    } catch (error) {
-        console.error("Gagal menghapus komentar:", error);
-        return { success: false, message: "Gagal menghapus komentar." };
-    }
-}
-
 
 // --- Global Settings Actions ---
 

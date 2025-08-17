@@ -12,18 +12,6 @@ export type JudgeScore = {
   totalScore: number;
 };
 
-export type Comment = {
-  id: string;
-  artworkId?: string; // Optional: To know which artwork it belongs to in a flat list
-  artworkTitle?: string; // Optional: For display in admin panel
-  text: string;
-  createdAt: Date;
-  parentId: string | null;
-  replies: Comment[];
-  isPendingModeration: boolean;
-  moderationReason: string | null;
-}
-
 export type Artwork = {
   id: string; // Will be ObjectId string from MongoDB
   name: string;
@@ -36,7 +24,6 @@ export type Artwork = {
   likes: number; // Jumlah "like" yang diterima karya
   isDisqualified: boolean;
   disqualificationReason: string | null;
-  comments: Comment[];
   createdAt: Date;
   customData: Record<string, string>; // For custom form fields
 };
