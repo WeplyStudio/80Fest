@@ -72,7 +72,11 @@ export function JudgePanel({ initialArtworks, judgeName, onLogout }: JudgePanelP
         artwork.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         artwork.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         artwork.class.toLowerCase().includes(searchTerm.toLowerCase())
-    ).sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    ).sort((a,b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+    });
   }, [artworks, searchTerm]);
   
   const handleUpdateArtworkState = (updatedArtwork: Artwork) => {
@@ -180,7 +184,7 @@ export function JudgePanel({ initialArtworks, judgeName, onLogout }: JudgePanelP
                           <div className="grid md:grid-cols-2 gap-6 items-start">
                               <div className="aspect-[3/4] w-full relative rounded-md overflow-hidden bg-muted">
                                   <Image
-                                      src={artwork.imageUrl}
+                                      src={artwork.imageUrl || 'https://placehold.co/600x800.png'}
                                       alt={artwork.title}
                                       fill
                                       className="object-contain"

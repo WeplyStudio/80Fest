@@ -473,7 +473,7 @@ export async function getPendingComments(): Promise<Comment[]> {
         
         const pendingComments: Comment[] = [];
         artworksWithPendingComments.forEach(artwork => {
-            artwork.comments.forEach((comment: any) => {
+            artwork.comments?.forEach((comment: any) => {
                 if (comment.status === 'pending') {
                     pendingComments.push({
                         ...comment,
@@ -496,12 +496,15 @@ export async function approveComment(commentId: string) {
     }
     try {
         const collection = await getArtworksCollection();
-        await collection.updateOne(
+        const result = await collection.findOneAndUpdate(
             { "comments._id": new ObjectId(commentId) },
-            { $set: { "comments.$.status": "approved" } }
+            { $set: { "comments.$.status": "approved" } },
+            { projection: { _id: 1 } }
         );
         revalidatePath('/admin');
-        // Revalidate the specific artwork page if we store artworkId in comment
+        if (result?._id) {
+            revalidatePath(`/karya/${result._id.toString()}`);
+        }
         return { success: true };
     } catch (error) {
         console.error("Gagal menyetujui komentar:", error);
@@ -515,12 +518,15 @@ export async function deleteCommentById(commentId: string) {
     }
     try {
         const collection = await getArtworksCollection();
-        await collection.updateOne(
+        const result = await collection.findOneAndUpdate(
             { "comments._id": new ObjectId(commentId) },
-            { $pull: { comments: { _id: new ObjectId(commentId) } } }
+            { $pull: { comments: { _id: new ObjectId(commentId) } } },
+            { projection: { _id: 1 } }
         );
         revalidatePath('/admin');
-        // Revalidate artwork page
+        if (result?._id) {
+            revalidatePath(`/karya/${result._id.toString()}`);
+        }
         return { success: true };
     } catch (error) {
         console.error("Gagal menghapus komentar:", error);
